@@ -56,28 +56,38 @@ Exits `0` on success, `1` on failure with a typed error chain on stderr.
 
 ## `gc-forge run`
 
-_TODO iter 5._
+```
+gc-forge run <PATH> [OPTIONS]
+```
 
-The run subcommand will surface the runner-related options that the
-[`DockerRunner`](https://docs.rs/gc-forge-runner) already supports today
-under the hood. Anticipated flags:
+Loads the scenario at `<PATH>`, resolves its `extends:` chain, applies
+any `--override` substitutions, picks the correct regime implementation,
+runs the JVM through the runner, and writes the GC log + run manifest to
+the output directory.
 
-| Flag                       | Effect                                                                |
-|----------------------------|-----------------------------------------------------------------------|
-| `--out-dir <DIR>`          | Where the GC log and manifest are written.                            |
-| `--image <TAG>`            | Override the Docker image tag.                                        |
-| `--docker-cpus <N>`        | Pass `--cpus=<N>` to `docker run`.                                    |
-| `--docker-memory <BYTES>`  | Pass `--memory=<BYTES>` to `docker run`.                              |
-| `--rebase-timestamps`      | Post-process the log to start at `t=0` for reproducibility.           |
-| `--manifest-format <FMT>`  | `yaml` (default) or `json`.                                           |
+| Flag                              | Default                                              | Effect                                                                                          |
+|-----------------------------------|------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| `--out-dir <DIR>`                 | `./out`                                              | Output directory; the log and manifest land at `<DIR>/<name>-<seed>.{log,manifest.yaml}`.       |
+| `--override KEY=VALUE`            | none                                                 | Repeatable. Applies dotted-path overrides on the resolved scenario.                             |
+| `--image <TAG>`                   | `eclipse-temurin:<major>-jdk-jammy`                  | Pin the Docker image (digest pinning recommended for reproducibility).                          |
+| `--embedded-harness <PATH>`       | none                                                 | When set, treat the image as a `gc-forge-runner:*-jdk*` variant; skips mounting the host jar.   |
+| `--docker-cpus <N>`               | host limits                                          | `docker run --cpus=<N>`.                                                                        |
+| `--docker-memory <BYTES>`         | host limits                                          | `docker run --memory=<BYTES>`.                                                                  |
+| `--harness-jar <PATH>`            | `workload-harness/target/workload-harness.jar`       | Host path to the workload fat-jar (ignored when `--embedded-harness` is set).                   |
+| `--manifest-format <yaml\|json>`  | `yaml`                                               | Manifest serialisation; the log is always raw `-Xlog` output regardless.                        |
 
-The runner currently defaults to:
+The runner always passes `--rm`, `--network=none`, and `--entrypoint=java`,
+mounts the output directory at `/work`, and emits the unified
+`-Xlog:gc*=info,gc+heap=debug,gc+age=trace,gc+phases=debug,gc+humongous=trace:file=/work/<name>-<seed>.log:time,level,tags,pid,tid:filecount=0`
+flag to the JVM (cf. SPEC-TECHNIQUE §6.1).
 
-- image `eclipse-temurin:<major>-jdk-jammy`, derived from `spec.jvm.major`;
-- `--rm`, `--network=none`, `--entrypoint=java`;
-- mounts `<out-dir>` at `/work` (rw) and the harness jar at `/work/harness.jar` (ro);
-- when the image embeds the harness (e.g. `gc-forge-runner:*-jdk*` variants),
-  the host jar mount is dropped automatically.
+When the scenario's `metadata.name` is `foo` and `spec.seed` is `0xC0FFEE`, the
+output filenames become `foo-c0ffee.log` and `foo-c0ffee.manifest.yaml`. The
+seed is rendered in lowercase hex without the `0x` prefix to keep filenames
+stable across operating systems.
+
+`--preset NAME` is reserved for iteration 15 (preset packaging). For now,
+pass the path to the YAML in `presets/`.
 
 ## `gc-forge validate`
 

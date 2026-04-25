@@ -7,6 +7,10 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ### Added
 
+- `gc-forge run <scenario.yaml>`: end-to-end orchestrator. Loads the scenario (with `extends:` resolution + `--override` substitution), resolves the regime, executes through the Docker runner, and writes the GC log plus a `gc-forge/run-manifest.v1` document to `<out-dir>/<name>-<seed>.{log,manifest.yaml}`.
+- `gc-forge-scenario::manifest`: typed model for the run manifest — `RunManifest`, `RunMeta`, `HostMeta`, `ScenarioRecord`, `JvmRecord`, `ReproducibilityRecord`, `OutputRecord`, `ExpectedInvariantRecord`, `ValidationRecord`, `ExitStatusRecord` (tagged enum). YAML and JSON output via `write_yaml` / `write_json`. SHA-256 helpers `sha256_hex` / `sha256_hex_bytes`.
+- JSON Schema for the manifest at `schemas/run-manifest-v1.json`, generated alongside the scenario schema. Both are drift-checked at every test run.
+- First preset shipped: `presets/steady-g1-baseline.yaml` — G1 / Temurin 21 / 2g heap / 90s steady-state-healthy, with the documented `expected_phenomena` and `expected_invariants`.
 - `gc-forge-regimes`: `Regime` trait (`id`, `workload_args`, `expected_phenomena`, `expected_invariant_rules`) and `resolve(&RegimeSpec)` factory. `SteadyStateRegime` (R1) lands as the first concrete implementation, with `SteadyStateParams` typed view, `ObjectSizeDistribution` (small/medium/mixed) and `LifetimeDistribution` (short/mixed) enums, and a strict parameter parser that rejects unknown keys.
 - Java workload harness: split into `Regime` interface, `RegimeRegistry`, and `dev.gcforge.harness.regimes.SteadyStateRegime`. `WorkloadHarness#main` now parses `[kind] [duration] [seed] [k=v]…` and falls back to `steady-state-healthy PT10S 0xC0FFEE` when called without arguments (preserves `make demo`). Allocation primitives in `dev.gcforge.harness.alloc` (`ChunkSizer` with deterministic seeded sampling).
 - `doc/user/regimes.md`: regime catalog skeleton with R1 documented.

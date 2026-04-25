@@ -29,11 +29,57 @@ _TODO iter 17 — describe `cargo install gc-forge-cli`, the Homebrew tap (V1), 
 
 ## First scenario
 
-_TODO iter 5 — once `gc-forge run` is wired up, walk the reader through the steady-state baseline preset and the resulting log + manifest._
+The simplest path is to run the `steady-g1-baseline` preset shipped at
+`presets/steady-g1-baseline.yaml`:
+
+```sh
+# Build the harness fat-jar and the runner Docker image once.
+make build
+make docker-image
+
+# Validate the preset without launching the JVM.
+gc-forge lint presets/steady-g1-baseline.yaml
+
+# Run it. The 90-second G1 scenario writes a log + manifest under ./out.
+gc-forge run presets/steady-g1-baseline.yaml \
+    --image gc-forge-runner:dev-jdk21 \
+    --embedded-harness /opt/gc-forge/harness.jar
+```
+
+After ~90 seconds you should see two files:
+
+```
+out/
+├── steady-g1-baseline-c0ffee.log              # raw GC log, like a prod app
+└── steady-g1-baseline-c0ffee.manifest.yaml    # identity card
+```
+
+The CLI prints both paths on completion. The log is a verbatim
+`-Xlog:gc*` capture from Temurin 21; tools that read JVM GC logs (such
+as GC-Insight) consume it as-is.
 
 ## Reading the manifest
 
-_TODO iter 5 — show a sample `gc-forge/run-manifest.v1` and explain each field._
+The manifest is a YAML document conforming to the schema at
+[`schemas/run-manifest-v1.json`](../../schemas/run-manifest-v1.json).
+Top-level fields:
+
+| Field             | What it carries |
+|-------------------|-----------------|
+| `run`             | UUID v7 of the run, wall-clock window, exit status, host description (OS, arch, container). |
+| `scenario`        | Source path, SHA-256 of the source file, and the **fully resolved** scenario after `extends:` and overrides. |
+| `jvm`             | Vendor, the version string captured from `java -version`, and the exact list of JVM flags passed to the `java` invocation. |
+| `reproducibility` | Seed (hex), SHA-256 of the harness JAR, GC-Forge version. |
+| `output`          | Path of the GC log, its SHA-256 and size in bytes. |
+| `expected_phenomena` / `expected_invariants` | Ground truth from the regime, used by `gc-forge validate` (lands in iter 13). |
+| `validation`      | Status (`skipped` until validation runs), per-rule results, validator version. |
+
+Because every flag, hash and host attribute is recorded, two operators
+running the same preset on the same machine should land on the same
+manifest modulo the run UUID and the start/end timestamps.
+
+The validation block stays `skipped` until you run
+`gc-forge validate <log> --manifest <manifest.yaml>` (iteration 13).
 
 ## Running a batch
 

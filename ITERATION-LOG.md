@@ -5,6 +5,74 @@ Maintained by the Teamlead role. See `doc/process/orchestration.md` for the proc
 
 ---
 
+## Iteration 5 — run-end-to-end
+
+- **Started:** 2026-04-25
+- **Status:** merged
+- **Branch:** `iter/05-run-end-to-end` (merged into `main`)
+- **Goal:** compose the four lower-level building blocks (`gc-forge-scenario`, `gc-forge-regimes`, `gc-forge-runner`, the harness) into a single `gc-forge run` subcommand, write the run manifest defined in SPEC-FONCTIONNELLE §6.2, and ship the first preset (`steady-g1-baseline`).
+
+### Roles (this iteration)
+
+| Role | Agent | Note |
+|------|-------|------|
+| Teamlead   | A4 | was Coder in iter 4 |
+| Coder      | A5 | was Reviewer in iter 4 |
+| Reviewer   | A6 | was Tester-unit in iter 4 |
+| Tester-unit | A1 | was Tester-func in iter 4 |
+| Tester-func | A2 | was Doc-writer in iter 4 |
+| Doc-writer | A3 | was Teamlead in iter 4 |
+
+Rotation rule satisfied.
+
+### Plan
+
+1. Add a `manifest` module to `gc-forge-scenario` modelling `gc-forge/run-manifest.v1`, with serde + schemars.
+2. Implement `gc-forge run`: orchestrate scenario load + override, regime resolution, runner execution, manifest emission.
+3. First preset: `presets/steady-g1-baseline.yaml`.
+4. Tests: manifest round-trip + schema, CLI argv parsing, gated end-to-end smoke that runs the preset through Docker and checks the manifest hashes line up with the log file.
+5. Fill the "First scenario" section of `doc/user/getting-started.md` with the new run command.
+
+### Decisions log
+
+- **Manifest types live in `gc-forge-scenario::manifest`** rather than the runner crate. Justification: the manifest persists a scenario's execution; the runner already depends on scenario, so putting manifest there avoids a dep cycle. The CLI maps `RunOutcome` (from runner) into `RunMeta` fields when assembling the manifest — the manifest module stays I/O-agnostic.
+- **Manifest exit-status field is a string** (`success | failure | oom | timeout | signaled`) not a tagged enum, so downstream tooling that reads YAML/JSON without our typed library still gets a forward-compatible value. The Rust enum `ExitStatusRecord` deserialises via untagged.
+- **`gc_forge_version`** captures the CLI binary's `CARGO_PKG_VERSION` at compile time. Git-SHA capture is deferred until iter 17 (release-pipeline) because it requires a build script and is non-trivial in `cargo install` flows.
+- **Output path defaults**: when `--out-dir` is given, the log lands at `<out-dir>/<name>-<seed>.log` and the manifest at `<out-dir>/<name>-<seed>.manifest.yaml`. The naming matches SPEC-FONCTIONNELLE §6.2 and avoids overwriting prior runs of the same scenario at different seeds.
+- **`--preset NAME`**: deferred to iter 15 (`selftest-variance`) where preset packaging lands. Iter 5 only takes a path. The CLI reference notes this.
+
+### Metrics (at merge)
+
+- Rust unit tests: 92/92 (46 scenario incl. 9 manifest, 15 regimes, 23 runner, 5 placeholders, 5 CLI run module).
+- Java unit tests: 18/18 (unchanged).
+- Manual end-to-end smoke: `gc-forge run` against `presets/steady-g1-baseline.yaml` (3 s variant) on `gc-forge-runner:dev-jdk21` produces a 19 KB G1 log + a 2.7 KB YAML manifest with `exit_status.kind: success`, populated SHA-256 of the source/log/jar, recorded JVM flags, and `validation.status: skipped`.
+- `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`: clean.
+- `mvn verify`: green.
+- DoD-gate (phase 1): green.
+
+### Decisions taken in flight
+
+- **Iter-1 image required a rebuild.** The runner integration test from iter 3 happened to work because it was running against the freshly-built dev image at the time. By iter 5 the image still contained the iter-1 monolithic harness, so the harness rejected the new positional args (`Duration.parse(args[1])` blew up). Discovery → fix: rebuild via `make docker-image` whenever the harness signature changes. Made a note in `doc/user/getting-started.md` to run `make build && make docker-image` before the first `gc-forge run`.
+- **`HostMeta::os` / `arch` from `std::env::consts`** rather than build-time `CARGO_CFG_TARGET_OS`. The latter is a `build.rs`-only env var and panicked at compile time when used in regular code. The runtime constants are simpler and more honest (they describe the host the binary runs on, not the host it was compiled for — which is what the manifest should record).
+- **Filename seed in lowercase hex, no `0x`** prefix. Avoids edge cases on case-insensitive filesystems and keeps shell completion predictable. The seed in the manifest body still uses the canonical `0xC0FFEE` form.
+- **Manifest module placement**: ended up in `gc-forge-scenario` (not `gc-forge-runner`) as the API-FREEZE planned. Mapping `RunOutcome` → `ExitStatusRecord` happens in the CLI `run.rs`, keeping the `manifest` module I/O- and runner-agnostic.
+- **`validation.status: skipped`** by construction at iter 5. The `ValidationRecord::validator_version` already records the GC-Forge version that emitted the manifest, so iter 13's `gc-forge validate` will be able to detect manifests it should re-validate vs ones already validated.
+
+### Bilan
+
+The MVP "happy path" exists end to end: `gc-forge run presets/steady-g1-baseline.yaml` produces a real G1 GC log on Temurin 21 plus a typed, hash-anchored manifest documenting how it was produced. From iteration 5 forward, every regime added in iters 7–12 plugs into this same orchestrator without touching the runner or the manifest writer.
+
+The single most-load-bearing line of code in this iteration is `regime.workload_args(&scenario)?` in `cli/src/run.rs`: it is the seam between the typed scenario world and the harness CLI world. The Rust regimes own that translation; the Java harness only has to honour the agreed argv layout. The same seam will absorb six more regimes without growing.
+
+The end-to-end smoke also surfaced two minor production-quality items:
+
+1. **Image rebuild discipline.** The Makefile already has `docker-image: $(HARNESS_JAR) …` so changing the harness invalidates the image automatically — but a stale image lurks in CI and on dev machines. Documenting it in `getting-started.md` is the iter-5 mitigation; the proper fix is iter 17 (`release-pipeline`) which will produce content-addressable image tags.
+2. **Wall-clock timeout** still not enforced. `RunnerError::Timeout` has been declared since iter 3; the wiring lands in iter 14 (`batch`) where running 100+ scenarios in sequence makes a hung process catastrophic.
+
+Iteration 6 (`algos-zgc-parallel`) can start: ZGC and Parallel land alongside their two `*-baseline` presets, exercising the same `gc-forge run` path with different `-XX:+UseZGC`/`-XX:+UseParallelGC` flags.
+
+---
+
 ## Iteration 4 — harness-steady-state
 
 - **Started:** 2026-04-25

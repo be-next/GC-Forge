@@ -1,79 +1,73 @@
-# API freeze — iteration 4 (harness-steady-state)
+# API freeze — iteration 5 (run-end-to-end)
 
 Gate 1 artifact. Overwritten at every iteration before parallel work starts.
 
 ## Scope
 
-Introduces the `Regime` abstraction on both sides of the language boundary:
-
-- Java: `Regime` interface + `RegimeRegistry` + `SteadyStateRegime` implementing R1.
-- Rust: `Regime` trait in `gc-forge-regimes` + typed `SteadyStateParams` + `workload_args` translator.
-
-The full scenario → regime → runner → log pipeline lands next iteration.
+The `gc-forge run` subcommand lands. It composes the parser (iter 2), the
+regime translator (iter 4), and the Docker runner (iter 3), and emits the
+run manifest defined in SPEC-FONCTIONNELLE §6.2. Iteration 5 also ships
+the first preset YAML.
 
 ## Public Rust surface added
 
-### Crate `gc-forge-regimes`
+### Crate `gc-forge-scenario` — new `manifest` module
 
 | Item | Kind | Notes |
 |------|------|-------|
-| `Regime`                                       | trait  | `id`, `workload_args(scenario)`, `expected_phenomena`, `expected_invariant_rules` |
-| `RegimeError`                                  | enum (thiserror) | `UnknownKind`, `UnknownParameter`, `WrongType`, `OutOfRange` |
-| `SteadyStateRegime`                            | struct | implements `Regime` for R1 |
-| `SteadyStateParams`                            | struct | typed view of `regime.parameters` for R1 |
-| `SteadyStateParams::from_yaml(&Value)`         | fn     | parses with defaults, rejects unknown keys |
-| `ObjectSizeDistribution`                       | enum   | `Small`, `Medium`, `Mixed` (default) |
-| `LifetimeDistribution`                         | enum   | `Short`, `Mixed` (default) |
-| `resolve(&RegimeSpec)`                         | fn     | factory: kind string → `Box<dyn Regime>` |
+| `RunManifest`                  | struct | top-level `gc-forge/run-manifest.v1` document |
+| `RunMeta`                      | struct | `id`, `started_at`, `ended_at`, `duration_actual`, `exit_status`, `host` |
+| `HostMeta`                     | struct | `os`, `arch`, `cpu_count`, `container` |
+| `ScenarioRecord`               | struct | `source_path`, `source_sha256`, `resolved` (full Scenario) |
+| `JvmRecord`                    | struct | `vendor`, `version`, `flags` |
+| `ReproducibilityRecord`        | struct | `seed` (hex string), `workload_jar_sha256`, `gc_forge_version` |
+| `OutputRecord`                 | struct | `log_path`, `log_sha256`, `log_size_bytes` |
+| `ExpectedInvariantRecord`      | struct | `rule`, `threshold` (free-form YAML) |
+| `ValidationRecord`             | struct | `status`, `results`, `validated_at`, `validator_version` |
+| `ExitStatusRecord`             | enum   | `Success`, `Failure(i32)`, `Oom`, `Timeout`, `Signaled(i32)` — `serde(tag="kind")` |
+| `RunManifest::write_yaml(&Path)`| fn    | atomic write |
+| `RunManifest::write_json(&Path)`| fn    | atomic write |
+| `manifest::sha256_hex(&Path)`   | fn    | helper (used internally + reusable by validators) |
 
 ### Crate `gc-forge-cli`
 
-No change.
-
-### Crate `gc-forge-runner`
-
-No change.
+| Item | Kind | Notes |
+|------|------|-------|
+| `gc-forge run <scenario>` | clap subcommand | the orchestrator |
+| flags: `--out-dir`, `--override`, `--image`, `--docker-cpus`, `--docker-memory`, `--harness-jar`, `--manifest-format` | clap | all wired |
 
 ## Java harness public surface
 
-| Item | Kind | Notes |
-|------|------|-------|
-| `dev.gcforge.harness.Regime`                   | interface | `void run(Map<String,String> params, Duration duration, long seed)` |
-| `dev.gcforge.harness.RegimeRegistry`           | class | static `lookup(String kind)` returns the regime or throws |
-| `dev.gcforge.harness.regimes.SteadyStateRegime`| class | implements `Regime` for R1 |
-| `dev.gcforge.harness.WorkloadHarness.main`     | unchanged signature | new behaviour: parses `[kind] [duration] [seed] [k=v]…`; falls back to `steady-state-healthy PT10S 0xC0FFEE` when called with zero args. |
-| `dev.gcforge.harness.alloc.ChunkSizer`         | class | parameterised chunk-size sampler (Small/Medium/Mixed) |
+No change.
 
 ## YAML schema changes
 
-None at the typed level. The free-form `regime.parameters` is now validated
-when the regime is `steady-state-healthy`: the four documented keys are
-accepted, anything else rejected with a precise error path.
+New schema `gc-forge/run-manifest.v1` rendered into
+`schemas/run-manifest-v1.json` via the same `gen-schema` binary
+(extended to write both files).
 
 ## Invariants for Tester-unit
 
-Rust:
-- `SteadyStateParams::from_yaml(&Value::Null)` returns the documented defaults.
-- Each parameter accepts integer and string forms where the spec allows.
-- An unknown key fails with `RegimeError::UnknownParameter`.
-- `workload_args` always emits at least the four positional args (`steady-state-healthy`, duration ISO, seed hex, …`k=v`).
-- `expected_phenomena` returns `["young_gc_steady"]`.
-- `resolve(&RegimeSpec { kind: "steady-state-healthy", … })` returns a `SteadyStateRegime`.
-- `resolve(&RegimeSpec { kind: "unknown-kind", … })` returns `RegimeError::UnknownKind`.
-
-Java:
-- `WorkloadHarness.main(new String[]{})` runs the default fallback to completion (≤ 12 s).
-- `WorkloadHarness.main` rejects unknown regime kinds with a non-zero exit.
-- `SteadyStateRegime` consumes the documented parameters and rejects unknown keys.
-- Two runs of `SteadyStateRegime` with the same seed produce the same chunk-size sequence (probed via `ChunkSizer.sample` directly).
+- `RunManifest` round-trips through both YAML and JSON.
+- `RunManifest::write_yaml` produces a file that re-loads to the same
+  struct (sha-stable on the resolved scenario subtree).
+- `manifest::sha256_hex` matches `sha256sum`'s output for a few canned
+  byte strings.
+- `gc-forge run` parses and routes flags correctly (no JVM launched in
+  the unit test — only argv assertions).
+- The end-to-end smoke (docker-integration feature) writes a manifest
+  whose `output.log_sha256` matches the actual log file.
 
 ## Doc sections to author (Doc-writer)
 
-- `doc/user/regimes.md` — new file with R1 section filled (parameters, defaults, signature attendue, expected phenomena). R2–R7 are listed with `_TODO iter N_` cross-references.
-- `doc/user/cli-reference.md` — note the no-args fallback for the harness.
-- `CHANGELOG.md` — Unreleased: Regime trait/registry, SteadyStateRegime (Java + Rust), SteadyStateParams, ObjectSizeDistribution, LifetimeDistribution.
+- `doc/user/getting-started.md` — fill the "First scenario" and
+  "Reading the manifest" sections.
+- `doc/user/cli-reference.md` — drop the `_TODO iter 5_` markers on
+  the `run` subcommand.
+- `CHANGELOG.md` — Unreleased: manifest module, run subcommand,
+  steady-g1-baseline preset, run-manifest schema.
 
 ## Approval
 
-- Coder: A4 — frozen 2026-04-25
-- Reviewer: A5 — `Approved: A5 2026-04-25` (read against SPEC-FONCTIONNELLE §4.1 and SPEC-TECHNIQUE §4.3 / §4.4; the symmetric Java/Rust split is consistent with the spec's "regime ne génère pas le log" principle).
+- Coder: A5 — frozen 2026-04-25
+- Reviewer: A6 — `Approved: A6 2026-04-25` (read against SPEC-FONCTIONNELLE §6.2 and SPEC-TECHNIQUE §4.1; manifest module placement and exit-status string serialisation OK; --preset deferral noted in CLI doc).
