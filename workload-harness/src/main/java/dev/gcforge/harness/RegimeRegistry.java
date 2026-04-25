@@ -1,5 +1,6 @@
 package dev.gcforge.harness;
 
+import dev.gcforge.harness.regimes.AllocationBurstRegime;
 import dev.gcforge.harness.regimes.SteadyStateRegime;
 
 import java.util.LinkedHashMap;
@@ -21,7 +22,8 @@ public final class RegimeRegistry {
 
     static {
         register("steady-state-healthy", SteadyStateRegime::new);
-        // Future regimes (allocation-burst, humongous-pressure, …) register here
+        register("allocation-burst", AllocationBurstRegime::new);
+        // Future regimes (humongous-pressure, slow-leak, …) register here
         // alongside their iteration's class additions.
     }
 

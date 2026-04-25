@@ -1,0 +1,45 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+metadata:
+  name: burst-g1-30s
+  version: 1.0.0
+  description: |
+    R2 — allocation-burst on G1. Base allocation rate of 30 MiB/s with 5 s
+    bursts at 200 MiB/s every 30 s. Demonstrates pulsing young-GC frequency
+    without evacuation failures (the 2 GiB heap absorbs the burst).
+  tags: [mvp, burst, g1, allocation-burst]
+  authors: ["GC-Forge MVP"]
+
+spec:
+  jvm:
+    vendor: temurin
+    major: 21
+
+  gc:
+    algorithm: G1
+    options:
+      heap:
+        min: 2g
+        max: 2g
+
+  regime:
+    kind: allocation-burst
+    parameters:
+      base_rate_mb_s: 30
+      burst_rate_mb_s: 200
+      burst_duration_s: 5
+      burst_period_s: 30
+      bursts_count: auto
+
+  duration: 5m
+  warmup: 10s
+  seed: 0xC0FFEE
+
+  expected:
+    phenomena:
+      - allocation_burst
+    invariants:
+      - { rule: "young_gc_frequency_pulses",                       threshold: true }
+      - { rule: "no_evacuation_failure",                            threshold: true }
+      - { rule: "post_burst_recovery_within_2x_burst_duration",     threshold: 10 }

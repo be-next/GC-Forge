@@ -126,3 +126,43 @@ fn zgc_baseline_emits_using_zgc() {
 fn parallel_baseline_emits_using_parallel() {
     run_baseline("steady-parallel-baseline.yaml", "Using Parallel");
 }
+
+#[test]
+fn burst_g1_preset_runs_through_pipeline() {
+    // R2 (allocation-burst) on G1. We override the duration down to a
+    // value that still covers one full burst (5 s burst inside a 30 s
+    // period — 12 s lets us see at least the burst onset and the start
+    // of the recovery phase).
+    let root = workspace_root();
+    let preset = root.join("presets/burst-g1-30s.yaml");
+    let dir = tempdir().unwrap();
+    let status = Command::new(cli_bin())
+        .args([
+            "run",
+            preset.to_str().unwrap(),
+            "--out-dir",
+            dir.path().to_str().unwrap(),
+            "--image",
+            RUNNER_IMAGE,
+            "--embedded-harness",
+            HARNESS_IN_IMAGE,
+            "--override",
+            "spec.duration=12s",
+        ])
+        .status()
+        .expect("failed to invoke gc-forge");
+    assert!(status.success(), "gc-forge run failed for burst-g1-30s");
+    let log = locate_log(dir.path()).expect("burst-g1 log produced");
+    let body = std::fs::read_to_string(&log).unwrap();
+    assert!(
+        body.contains("Using G1"),
+        "G1 marker missing in {}",
+        log.display()
+    );
+    // At least one young Pause entry — the burst should trigger one.
+    assert!(
+        body.contains("Pause Young"),
+        "no Pause Young found in burst log {}",
+        log.display()
+    );
+}

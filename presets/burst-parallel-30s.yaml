@@ -1,0 +1,21 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+extends: burst-g1-30s.yaml
+
+metadata:
+  name: burst-parallel-30s
+  version: 1.0.0
+  description: |
+    R2 — allocation-burst on Parallel. Same schedule as `burst-g1-30s`, but
+    on a throughput-oriented collector. Useful contrast with G1's pause
+    behaviour around burst onset and recovery.
+  tags: [mvp, burst, parallel, allocation-burst]
+
+spec:
+  gc:
+    algorithm: Parallel
+    options:
+      heap:
+        min: 2g
+        max: 2g

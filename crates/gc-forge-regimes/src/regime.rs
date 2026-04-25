@@ -6,6 +6,7 @@ use thiserror::Error;
 
 use gc_forge_scenario::{RegimeSpec, Scenario};
 
+use crate::allocation_burst::AllocationBurstRegime;
 use crate::steady_state::SteadyStateRegime;
 
 /// One of the seven MVP regimes (R1..R7). The trait is intentionally
@@ -74,6 +75,7 @@ pub enum RegimeError {
 pub fn resolve(spec: &RegimeSpec) -> Result<Box<dyn Regime>, RegimeError> {
     match spec.kind.as_str() {
         "steady-state-healthy" => Ok(Box::new(SteadyStateRegime)),
+        "allocation-burst" => Ok(Box::new(AllocationBurstRegime)),
         other => Err(RegimeError::UnknownKind(other.to_owned())),
     }
 }

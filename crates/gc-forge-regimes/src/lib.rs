@@ -4,9 +4,11 @@
 //! implementation, [`SteadyStateRegime`] (R1 in SPEC-FONCTIONNELLE §4.1).
 //! The remaining six MVP regimes land in iterations 7–12.
 
+pub mod allocation_burst;
 pub mod regime;
 pub mod steady_state;
 
+pub use allocation_burst::{AllocationBurstParams, AllocationBurstRegime, BurstsCount};
 pub use regime::{resolve, Regime, RegimeError};
 pub use steady_state::{
     LifetimeDistribution, ObjectSizeDistribution, SteadyStateParams, SteadyStateRegime,
