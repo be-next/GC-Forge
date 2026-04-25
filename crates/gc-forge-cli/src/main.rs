@@ -1,12 +1,17 @@
 //! GC-Forge command-line entry point.
 //!
-//! Iteration 1 (bootstrap): only `--version` is wired up. Subcommands land
-//! starting iteration 2 (`scenario-parser`).
+//! Iteration 2 (`scenario-parser`): wires up `gc-forge lint`. Other
+//! subcommands (`run`, `validate`, `batch`, `selftest`, …) land in later
+//! iterations.
 
-// Subcommands land in iter 2+ and will surface fallible operations.
 #![allow(clippy::unnecessary_wraps)]
 
-use clap::Parser;
+use std::path::PathBuf;
+use std::process::ExitCode;
+
+use clap::{Parser, Subcommand};
+
+use gc_forge_scenario::{Override, Scenario, ScenarioError};
 
 /// GC-Forge — declarative generator of Java GC logs.
 #[derive(Debug, Parser)]
@@ -16,10 +21,70 @@ use clap::Parser;
     about = "Declarative generator of Java GC logs.",
     long_about = None,
 )]
-struct Cli {}
+struct Cli {
+    #[command(subcommand)]
+    command: Option<Command>,
+}
 
-fn main() -> anyhow::Result<()> {
-    let _cli = Cli::parse();
-    // Iter 1: nothing to do beyond clap's auto --version / --help handling.
+#[derive(Debug, Subcommand)]
+enum Command {
+    /// Validates a scenario file (syntax + apiVersion + extends resolution),
+    /// without executing it.
+    Lint(LintArgs),
+}
+
+#[derive(Debug, clap::Args)]
+struct LintArgs {
+    /// Path to the scenario YAML.
+    path: PathBuf,
+
+    /// Optional `KEY=VALUE` overrides applied after extends resolution. Same
+    /// syntax as `gc-forge run --override`. Useful for catching issues that
+    /// only manifest after substitution.
+    #[arg(long = "override", value_name = "KEY=VALUE")]
+    overrides: Vec<String>,
+}
+
+fn main() -> ExitCode {
+    let cli = Cli::parse();
+    match cli.command {
+        Some(Command::Lint(args)) => match run_lint(&args) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(e) => {
+                report(&e);
+                ExitCode::from(1)
+            }
+        },
+        None => ExitCode::SUCCESS, // bare `gc-forge` prints help via clap's default
+    }
+}
+
+fn run_lint(args: &LintArgs) -> Result<(), ScenarioError> {
+    let scenario = Scenario::resolve(&args.path)?;
+
+    if !args.overrides.is_empty() {
+        let parsed: Vec<Override> = args
+            .overrides
+            .iter()
+            .map(|s| Override::parse(s))
+            .collect::<Result<_, _>>()?;
+        let _ = scenario.clone().apply_overrides(&parsed)?;
+    }
+
+    println!(
+        "✓ {} parses cleanly (apiVersion={}, kind={})",
+        args.path.display(),
+        scenario.api_version,
+        scenario.kind
+    );
     Ok(())
+}
+
+fn report(err: &ScenarioError) {
+    eprintln!("error: {err}");
+    let mut source = std::error::Error::source(err);
+    while let Some(s) = source {
+        eprintln!("  caused by: {s}");
+        source = s.source();
+    }
 }

@@ -1,8 +1,9 @@
 # macOS
 .DS_Store
 
-# Claude Code local instructions
+# Claude Code local instructions and runtime state
 CLAUDE.md
+.claude/
 
 # Rust
 target/

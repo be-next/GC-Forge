@@ -1,6 +1,39 @@
 //! Scenario parsing and validation for GC-Forge.
 //!
-//! Iteration 1 (bootstrap): placeholder only. Real types land in iteration 2.
+//! Loads YAML scenario documents conforming to `gc-forge/scenario.v1`,
+//! resolves `extends:` chains, applies CLI-style overrides, and exposes a
+//! JSON Schema for downstream tooling.
+//!
+//! # Quick example
+//!
+//! ```no_run
+//! use gc_forge_scenario::{Override, Scenario};
+//!
+//! let s = Scenario::resolve("scenarios/humongous-pressure-g1.yaml")?;
+//! let s = s.apply_overrides(&[Override::parse("spec.gc.options.heap.max=4g")?])?;
+//! println!("name = {}", s.metadata.name);
+//! # Ok::<_, gc_forge_scenario::ScenarioError>(())
+//! ```
+
+pub mod byte_size;
+pub mod duration;
+pub mod error;
+mod extends;
+mod loader;
+pub mod overrides;
+pub mod scenario;
+pub mod schema;
+
+pub use byte_size::{ByteSize, ParseByteSizeError};
+pub use duration::{Duration, ParseDurationError};
+pub use error::{Result, ScenarioError};
+pub use overrides::Override;
+pub use scenario::{
+    Distribution, ExpectedClause, GcAlgorithm, GcOptions, GcSpec, HeapConfig, InvariantRule,
+    JvmSpec, JvmVendor, LogFormat, Metadata, OutputSpec, RegimeSpec, Scenario, Seed, Spec,
+    API_VERSION, KIND,
+};
+pub use schema::render_schema;
 
 /// Returns this crate's version.
 #[must_use]

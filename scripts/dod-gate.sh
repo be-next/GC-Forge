@@ -35,22 +35,41 @@ ok()   { printf '\033[32m✓ %s\033[0m\n' "$*"; }
 skip() { printf '\033[33m∼ %s (skipped this phase)\033[0m\n' "$*"; }
 fail() { printf '\033[31m✗ %s\033[0m\n' "$*"; exit 1; }
 
+# Each check below uses an explicit if/then/else so that `set -e` cannot
+# mask a failure that hides behind `&&` short-circuiting.
+
 # 1. Rust formatting
 step "cargo fmt --check"
-cargo fmt --all -- --check && ok "fmt"
+if cargo fmt --all -- --check; then
+    ok "fmt"
+else
+    fail "rustfmt found differences (run \`cargo fmt --all\`)"
+fi
 
 # 2. Rust clippy
 step "cargo clippy"
-cargo clippy --workspace --all-targets -- -D warnings && ok "clippy"
+if cargo clippy --workspace --all-targets -- -D warnings; then
+    ok "clippy"
+else
+    fail "clippy found issues"
+fi
 
 # 3. Rust tests
 step "cargo test"
-cargo test --workspace --quiet && ok "cargo test"
+if cargo test --workspace --quiet; then
+    ok "cargo test"
+else
+    fail "rust tests failed"
+fi
 
 # 4. cargo-deny (licenses + advisories + bans + sources)
 step "cargo deny check"
 if command -v cargo-deny >/dev/null 2>&1; then
-    cargo deny check && ok "deny"
+    if cargo deny check; then
+        ok "deny"
+    else
+        fail "cargo deny found issues"
+    fi
 else
     skip "cargo-deny not installed (install with: cargo install --locked cargo-deny)"
 fi
@@ -60,8 +79,11 @@ step "rust coverage (floor=${COVERAGE_FLOOR}%)"
 if [[ "${COVERAGE_FLOOR}" -eq 0 ]]; then
     skip "coverage floor 0 in phase ${PHASE}"
 elif command -v cargo-llvm-cov >/dev/null 2>&1; then
-    cargo llvm-cov --workspace --fail-under-lines "${COVERAGE_FLOOR}" \
-        && ok "coverage ≥ ${COVERAGE_FLOOR}%"
+    if cargo llvm-cov --workspace --fail-under-lines "${COVERAGE_FLOOR}"; then
+        ok "coverage ≥ ${COVERAGE_FLOOR}%"
+    else
+        fail "rust coverage below ${COVERAGE_FLOOR}%"
+    fi
 else
     skip "cargo-llvm-cov not installed (install with: cargo install --locked cargo-llvm-cov)"
 fi
@@ -69,7 +91,11 @@ fi
 # 6. Java harness verify
 step "mvn verify (workload-harness)"
 if command -v mvn >/dev/null 2>&1; then
-    mvn -f workload-harness/pom.xml -q verify && ok "mvn verify"
+    if mvn -f workload-harness/pom.xml -q verify; then
+        ok "mvn verify"
+    else
+        fail "mvn verify failed"
+    fi
 else
     skip "Maven not installed"
 fi
