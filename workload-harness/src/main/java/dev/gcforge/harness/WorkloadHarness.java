@@ -1,21 +1,35 @@
 package dev.gcforge.harness;
 
 import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.NoSuchElementException;
 
 /**
  * GC-Forge workload harness — entry point.
  *
- * <p>Iteration 1 (bootstrap): minimal allocation loop sufficient to produce a
- * non-trivial GC log on Temurin 17/21. Real regimes plug in starting iteration 4
- * via {@code RegimeRegistry} (see SPEC-TECHNIQUE §4.4).
+ * <p>Argument layout (positional):
+ * <pre>
+ *     [regime-kind] [duration-ISO] [seed-hex|long] [param-key=value]…
+ * </pre>
  *
- * <p>The loop allocates byte arrays at a configurable rate for a configurable
- * duration, holding a bounded live-set so that young collections fire and the
- * heap reaches a steady state.
+ * <p>Examples:
+ * <pre>
+ *     java -jar harness.jar steady-state-healthy PT30S 0xC0FFEE \
+ *         allocation_rate_mb_s=50 live_set_mb=100
+ * </pre>
+ *
+ * <p>When invoked with zero arguments, falls back to a 10 s
+ * {@code steady-state-healthy} run with the seed {@code 0xC0FFEE}. This
+ * preserves the {@code make demo} behaviour from iteration 1 without forcing
+ * the demo target to teach itself the new CLI.
+ *
+ * <p>Exit codes:
+ * <ul>
+ *   <li>{@code 0}: regime ran to completion.</li>
+ *   <li>{@code 1}: argument parsing or unknown regime kind.</li>
+ *   <li>{@code 2}: regime threw at runtime.</li>
+ * </ul>
  */
 public final class WorkloadHarness {
 
@@ -23,68 +37,85 @@ public final class WorkloadHarness {
         // utility class
     }
 
-    /**
-     * Entry point. Recognised arguments (positional, all optional):
-     * <ol>
-     *   <li>{@code duration} — ISO-8601 (e.g. {@code PT30S}). Default {@code PT10S}.</li>
-     *   <li>{@code allocationRateMbPerSec} — long. Default {@code 50}.</li>
-     *   <li>{@code liveSetMb} — long. Default {@code 50}.</li>
-     *   <li>{@code seed} — long. Default {@code 0}.</li>
-     * </ol>
-     */
     public static void main(String[] args) {
-        Duration duration = args.length > 0 ? Duration.parse(args[0]) : Duration.ofSeconds(10);
-        long rateMbPerSec = args.length > 1 ? Long.parseLong(args[1]) : 50L;
-        long liveSetMb    = args.length > 2 ? Long.parseLong(args[2]) : 50L;
-        long seed         = args.length > 3 ? Long.parseLong(args[3]) : 0L;
-
-        runAllocationLoop(duration, rateMbPerSec, liveSetMb, seed);
+        try {
+            Invocation inv = parse(args);
+            Regime regime = RegimeRegistry.lookup(inv.kind);
+            regime.run(inv.params, inv.duration, inv.seed);
+        } catch (IllegalArgumentException | NoSuchElementException e) {
+            System.err.println("error: " + e.getMessage());
+            System.exit(1);
+        } catch (RuntimeException e) {
+            System.err.println("regime failed: " + e.getMessage());
+            e.printStackTrace(System.err);
+            System.exit(2);
+        }
     }
 
     /**
-     * Steady-state allocation loop.
-     *
-     * <p>Allocates {@code chunkBytes}-sized {@code byte[]} chunks at the
-     * requested rate, retaining the most recent ones until the live set
-     * approximates {@code liveSetMb}. The youngest entries are evicted FIFO
-     * once the cap is reached, so the live set stabilises and old gen pressure
-     * stays bounded — the canonical "steady-state-healthy" shape of regime R1.
+     * Visible for tests. Parses the positional + key=value arg layout.
      */
-    static void runAllocationLoop(Duration duration, long rateMbPerSec, long liveSetMb, long seed) {
-        final int chunkBytes = 64 * 1024;          // 64 KiB chunks
-        final long bytesPerSec = rateMbPerSec * 1024L * 1024L;
-        final long pauseMicros = bytesPerSec == 0 ? 1_000 : 1_000_000L * chunkBytes / bytesPerSec;
-        final int liveSetCap = (int) Math.max(1L, liveSetMb * 1024L * 1024L / chunkBytes);
+    static Invocation parse(String[] args) {
+        if (args.length == 0) {
+            // Demo / smoke-test fallback: 10 s steady-state at default params.
+            return new Invocation(
+                "steady-state-healthy", Duration.ofSeconds(10), 0x00C0_FFEEL, new LinkedHashMap<>()
+            );
+        }
+        if (args.length < 3) {
+            throw new IllegalArgumentException(
+                "expected at least 3 positional arguments [kind] [duration] [seed], got " + args.length
+            );
+        }
+        String kind = args[0];
+        Duration duration;
+        try {
+            duration = Duration.parse(args[1]);
+        } catch (RuntimeException e) {
+            throw new IllegalArgumentException(
+                "invalid duration " + args[1] + " (expected ISO-8601 like PT30S): " + e.getMessage()
+            );
+        }
+        long seed = parseSeed(args[2]);
 
-        Random rng = new Random(seed);
-        List<byte[]> liveSet = new ArrayList<>(liveSetCap + 1);
-        Instant deadline = Instant.now().plus(duration);
-
-        while (Instant.now().isBefore(deadline)) {
-            byte[] chunk = new byte[chunkBytes];
-            // Touch a few cells so the JVM cannot elide the allocation.
-            chunk[0] = (byte) rng.nextInt();
-            chunk[chunk.length - 1] = (byte) rng.nextInt();
-
-            liveSet.add(chunk);
-            if (liveSet.size() > liveSetCap) {
-                liveSet.remove(0);
+        Map<String, String> params = new LinkedHashMap<>();
+        for (int i = 3; i < args.length; i++) {
+            String arg = args[i];
+            int eq = arg.indexOf('=');
+            if (eq <= 0) {
+                throw new IllegalArgumentException(
+                    "parameter " + arg + " is not in key=value form"
+                );
             }
+            params.put(arg.substring(0, eq), arg.substring(eq + 1));
+        }
+        return new Invocation(kind, duration, seed, params);
+    }
 
-            sleepMicros(pauseMicros);
+    private static long parseSeed(String s) {
+        String trimmed = s.trim();
+        try {
+            if (trimmed.startsWith("0x") || trimmed.startsWith("0X")) {
+                return Long.parseUnsignedLong(trimmed.substring(2), 16);
+            }
+            return Long.parseLong(trimmed);
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("invalid seed " + s + ": " + e.getMessage());
         }
     }
 
-    private static void sleepMicros(long micros) {
-        if (micros <= 0) {
-            return;
-        }
-        try {
-            long millis = micros / 1_000;
-            int nanos   = (int) ((micros % 1_000) * 1_000);
-            Thread.sleep(millis, nanos);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+    /** Visible for tests. Parsed CLI invocation. */
+    static final class Invocation {
+        final String kind;
+        final Duration duration;
+        final long seed;
+        final Map<String, String> params;
+
+        Invocation(String kind, Duration duration, long seed, Map<String, String> params) {
+            this.kind = kind;
+            this.duration = duration;
+            this.seed = seed;
+            this.params = params;
         }
     }
 }

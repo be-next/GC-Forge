@@ -1,7 +1,16 @@
 //! Application regimes for GC-Forge.
 //!
-//! Iteration 1 (bootstrap): placeholder only. The seven MVP regimes land
-//! starting iteration 4 (`harness-steady-state`) and through iteration 12.
+//! Iteration 4 introduces the [`Regime`] trait and the first concrete
+//! implementation, [`SteadyStateRegime`] (R1 in SPEC-FONCTIONNELLE §4.1).
+//! The remaining six MVP regimes land in iterations 7–12.
+
+pub mod regime;
+pub mod steady_state;
+
+pub use regime::{resolve, Regime, RegimeError};
+pub use steady_state::{
+    LifetimeDistribution, ObjectSizeDistribution, SteadyStateParams, SteadyStateRegime,
+};
 
 /// Returns this crate's version.
 #[must_use]

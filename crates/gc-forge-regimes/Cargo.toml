@@ -11,8 +11,9 @@ homepage.workspace = true
 readme.workspace = true
 
 [dependencies]
-serde     = { workspace = true }
-thiserror = { workspace = true }
+serde      = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror  = { workspace = true }
 gc-forge-scenario = { workspace = true }
 
 [lints]

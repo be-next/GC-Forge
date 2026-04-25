@@ -231,6 +231,7 @@ version = "0.0.1-dev"
 dependencies = [
  "gc-forge-scenario",
  "serde",
+ "serde_yaml",
  "thiserror",
 ]
 
