@@ -31,5 +31,12 @@ gc-forge-runner   = { workspace = true }
 gc-forge-validate = { workspace = true }
 gc-forge-presets  = { workspace = true }
 
+[dev-dependencies]
+tempfile = "3.13"
+
+[features]
+# Enables the integration tests that actually launch Docker.
+docker-integration = []
+
 [lints]
 workspace = true

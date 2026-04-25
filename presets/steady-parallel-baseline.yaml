@@ -1,0 +1,21 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+extends: steady-g1-baseline.yaml
+
+metadata:
+  name: steady-parallel-baseline
+  version: 1.0.0
+  description: |
+    Reference baseline — Parallel collector on Temurin 21 under a
+    steady-state-healthy workload. Throughput-oriented contrast against G1
+    and ZGC at the same allocation rate, live set, and heap size.
+  tags: [mvp, baseline, parallel, throughput, steady-state]
+
+spec:
+  gc:
+    algorithm: Parallel
+    options:
+      heap:
+        min: 2g
+        max: 2g

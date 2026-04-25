@@ -265,6 +265,7 @@ dependencies = [
  "gc-forge-scenario",
  "gc-forge-validate",
  "serde_yaml",
+ "tempfile",
  "thiserror",
  "tracing",
  "tracing-subscriber",

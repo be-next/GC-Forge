@@ -96,7 +96,16 @@ pub fn execute(args: &RunArgs) -> Result<(), RunCommandError> {
     let workload_args = regime.workload_args(&scenario)?;
 
     let (log_path, manifest_path) = output_paths(&scenario, &args.out_dir, args.manifest_format);
-    let harness_jar = harness_jar_path(args.harness_jar.as_deref())?;
+    // The host harness jar is only mounted when the image does not embed it;
+    // skip the existence check in embedded-harness mode so callers using a
+    // self-contained runner image don't need the host jar at all.
+    let harness_jar = if args.embedded_harness.is_some() {
+        args.harness_jar
+            .clone()
+            .unwrap_or_else(|| PathBuf::from("(embedded in image)"))
+    } else {
+        harness_jar_path(args.harness_jar.as_deref())?
+    };
 
     let runner = build_runner(args);
     let cpu_limit = args.docker_cpus;

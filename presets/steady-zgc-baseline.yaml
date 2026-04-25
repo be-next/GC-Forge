@@ -1,0 +1,25 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+extends: steady-g1-baseline.yaml
+
+metadata:
+  name: steady-zgc-baseline
+  version: 1.0.0
+  description: |
+    Reference baseline — generational ZGC on Temurin 21 under a
+    steady-state-healthy workload. Same regime parameters as the G1 baseline;
+    the contrast is in the GC algorithm. Expected fingerprint matches R1
+    invariants (≥ 80% young, no full GC), with sub-millisecond p99 pauses
+    typical of ZGC.
+  tags: [mvp, baseline, zgc, generational, steady-state]
+
+spec:
+  gc:
+    algorithm: ZGC
+    options:
+      # `generational: true` is the algorithm-natural default on JDK 21+;
+      # leaving it implicit lets the runner emit `-XX:+ZGenerational`.
+      heap:
+        min: 2g
+        max: 2g
