@@ -1,71 +1,79 @@
-# API freeze — iteration 3 (docker-runner-mvp)
+# API freeze — iteration 4 (harness-steady-state)
 
 Gate 1 artifact. Overwritten at every iteration before parallel work starts.
 
 ## Scope
 
-The `gc-forge-runner` crate gains its first real API: a `Runner` trait, the
-`DockerRunner` backend, and the function that translates a resolved
-`Scenario` into a JVM command line. No CLI subcommand wiring this iteration —
-that lands with `gc-forge run` in iter 5.
+Introduces the `Regime` abstraction on both sides of the language boundary:
+
+- Java: `Regime` interface + `RegimeRegistry` + `SteadyStateRegime` implementing R1.
+- Rust: `Regime` trait in `gc-forge-regimes` + typed `SteadyStateParams` + `workload_args` translator.
+
+The full scenario → regime → runner → log pipeline lands next iteration.
 
 ## Public Rust surface added
 
-### Crate `gc-forge-runner`
+### Crate `gc-forge-regimes`
 
 | Item | Kind | Notes |
 |------|------|-------|
-| `Runner`                        | trait  | `name`, `check_available`, `execute` |
-| `RunSpec`                       | struct | resolved scenario + log path + harness jar + workload args + (optional) cpu/memory limits |
-| `RunOutcome`                    | struct | log path, exit status, started_at, ended_at, jvm version, image used |
-| `ExitStatus`                    | enum   | `Success`, `Failure(i32)`, `Oom`, `Timeout`, `Signal(i32)` |
-| `RunnerError`                   | enum (thiserror) | `NotAvailable`, `Spawn`, `LogCapture`, `Wait`, `Timeout`, `Other` |
-| `DockerRunner`                  | struct | the iter-3 backend |
-| `DockerRunner::new`             | fn     | builder with sensible defaults |
-| `DockerRunner::with_image`      | fn     | override the image tag |
-| `DockerRunner::with_cpus(f64)`  | fn     | optional `--cpus` |
-| `DockerRunner::with_memory(ByteSize)` | fn | optional `--memory` |
-| `flags::build_jvm_command(&Scenario, &Path)` | fn | pure function → `Vec<String>` |
-| `flags::log_decorators()`       | fn (const) | the standardised `-Xlog` decorator string |
+| `Regime`                                       | trait  | `id`, `workload_args(scenario)`, `expected_phenomena`, `expected_invariant_rules` |
+| `RegimeError`                                  | enum (thiserror) | `UnknownKind`, `UnknownParameter`, `WrongType`, `OutOfRange` |
+| `SteadyStateRegime`                            | struct | implements `Regime` for R1 |
+| `SteadyStateParams`                            | struct | typed view of `regime.parameters` for R1 |
+| `SteadyStateParams::from_yaml(&Value)`         | fn     | parses with defaults, rejects unknown keys |
+| `ObjectSizeDistribution`                       | enum   | `Small`, `Medium`, `Mixed` (default) |
+| `LifetimeDistribution`                         | enum   | `Short`, `Mixed` (default) |
+| `resolve(&RegimeSpec)`                         | fn     | factory: kind string → `Box<dyn Regime>` |
 
 ### Crate `gc-forge-cli`
 
-No change this iteration.
+No change.
 
-## Java harness public surface
+### Crate `gc-forge-runner`
 
 No change.
 
+## Java harness public surface
+
+| Item | Kind | Notes |
+|------|------|-------|
+| `dev.gcforge.harness.Regime`                   | interface | `void run(Map<String,String> params, Duration duration, long seed)` |
+| `dev.gcforge.harness.RegimeRegistry`           | class | static `lookup(String kind)` returns the regime or throws |
+| `dev.gcforge.harness.regimes.SteadyStateRegime`| class | implements `Regime` for R1 |
+| `dev.gcforge.harness.WorkloadHarness.main`     | unchanged signature | new behaviour: parses `[kind] [duration] [seed] [k=v]…`; falls back to `steady-state-healthy PT10S 0xC0FFEE` when called with zero args. |
+| `dev.gcforge.harness.alloc.ChunkSizer`         | class | parameterised chunk-size sampler (Small/Medium/Mixed) |
+
 ## YAML schema changes
 
-None.
+None at the typed level. The free-form `regime.parameters` is now validated
+when the regime is `steady-state-healthy`: the four documented keys are
+accepted, anything else rejected with a precise error path.
 
 ## Invariants for Tester-unit
 
-- `flags::build_jvm_command` produces `-XX:+UseG1GC` for `algorithm: G1`,
-  `-XX:+UseZGC -XX:+ZGenerational` for `ZGC` with `generational != Some(false)`,
-  `-XX:+UseParallelGC` for `Parallel`.
-- The `-Xlog` flag is always emitted with the canonical decorator set.
-- `-Xms` and `-Xmx` are always emitted, in that order, in JVM-style suffix
-  form (matching `ByteSize::Display`).
-- G1-specific knobs (`MaxGCPauseMillis`, `G1HeapRegionSize`, `IHOP`) are emitted
-  only when the algorithm is G1 *and* the field is `Some`.
-- `extra_flags` (jvm and gc) are appended after the standard flags, in
-  declaration order, without de-duplication.
-- `DockerRunner::check_available` returns `Ok(())` when `docker version` exits 0.
-- The runner returns `RunnerError::NotAvailable` (not `Spawn`) when Docker
-  itself is missing.
-- Argv construction includes `--rm`, `--network=none`, and the mounts for
-  `<out_dir>:/work` and `<harness_jar>:/work/harness.jar:ro`.
+Rust:
+- `SteadyStateParams::from_yaml(&Value::Null)` returns the documented defaults.
+- Each parameter accepts integer and string forms where the spec allows.
+- An unknown key fails with `RegimeError::UnknownParameter`.
+- `workload_args` always emits at least the four positional args (`steady-state-healthy`, duration ISO, seed hex, …`k=v`).
+- `expected_phenomena` returns `["young_gc_steady"]`.
+- `resolve(&RegimeSpec { kind: "steady-state-healthy", … })` returns a `SteadyStateRegime`.
+- `resolve(&RegimeSpec { kind: "unknown-kind", … })` returns `RegimeError::UnknownKind`.
+
+Java:
+- `WorkloadHarness.main(new String[]{})` runs the default fallback to completion (≤ 12 s).
+- `WorkloadHarness.main` rejects unknown regime kinds with a non-zero exit.
+- `SteadyStateRegime` consumes the documented parameters and rejects unknown keys.
+- Two runs of `SteadyStateRegime` with the same seed produce the same chunk-size sequence (probed via `ChunkSizer.sample` directly).
 
 ## Doc sections to author (Doc-writer)
 
-- `doc/user/cli-reference.md` — initial skeleton with the future `gc-forge run`
-  options that surface today's runner flags (`--image`, `--docker-cpus`,
-  `--docker-memory`). Marked `_TODO iter 5_` for the run subcommand body.
-- `CHANGELOG.md` — `Unreleased`: Runner trait, DockerRunner, flag builder.
+- `doc/user/regimes.md` — new file with R1 section filled (parameters, defaults, signature attendue, expected phenomena). R2–R7 are listed with `_TODO iter N_` cross-references.
+- `doc/user/cli-reference.md` — note the no-args fallback for the harness.
+- `CHANGELOG.md` — Unreleased: Regime trait/registry, SteadyStateRegime (Java + Rust), SteadyStateParams, ObjectSizeDistribution, LifetimeDistribution.
 
 ## Approval
 
-- Coder: A3 — frozen 2026-04-25
-- Reviewer: A4 — `Approved: A4 2026-04-25` (read against SPEC-TECHNIQUE §4.5 and §6.1; runtime-gated integration test approved over `#[ignore]`).
+- Coder: A4 — frozen 2026-04-25
+- Reviewer: A5 — `Approved: A5 2026-04-25` (read against SPEC-FONCTIONNELLE §4.1 and SPEC-TECHNIQUE §4.3 / §4.4; the symmetric Java/Rust split is consistent with the spec's "regime ne génère pas le log" principle).

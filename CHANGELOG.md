@@ -7,6 +7,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ### Added
 
+- `gc-forge-regimes`: `Regime` trait (`id`, `workload_args`, `expected_phenomena`, `expected_invariant_rules`) and `resolve(&RegimeSpec)` factory. `SteadyStateRegime` (R1) lands as the first concrete implementation, with `SteadyStateParams` typed view, `ObjectSizeDistribution` (small/medium/mixed) and `LifetimeDistribution` (short/mixed) enums, and a strict parameter parser that rejects unknown keys.
+- Java workload harness: split into `Regime` interface, `RegimeRegistry`, and `dev.gcforge.harness.regimes.SteadyStateRegime`. `WorkloadHarness#main` now parses `[kind] [duration] [seed] [k=v]…` and falls back to `steady-state-healthy PT10S 0xC0FFEE` when called without arguments (preserves `make demo`). Allocation primitives in `dev.gcforge.harness.alloc` (`ChunkSizer` with deterministic seeded sampling).
+- `doc/user/regimes.md`: regime catalog skeleton with R1 documented.
 - `gc-forge-runner`: `Runner` trait with `check_available` + `execute`, `RunSpec`/`RunOutcome`/`ExitStatus`/`RunnerError` types.
 - `gc-forge-runner::DockerRunner`: Docker-backed runner. Supports image override, embedded-harness mode (skips the host jar mount when the image bakes the harness), `--cpus` and `--memory` limits. Always passes `--rm --network=none --entrypoint=java` for reproducibility and security.
 - `gc-forge-runner::flags::build_jvm_command`: pure translation of a resolved `Scenario` into a JVM argv. Implements the unified `-Xlog` shape mandated by SPEC-TECHNIQUE §6.1, plus the algorithm flag (`G1`/`ZGC[+ZGenerational]`/`Parallel`) and the per-algorithm tunables.

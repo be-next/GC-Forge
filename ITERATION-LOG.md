@@ -5,6 +5,70 @@ Maintained by the Teamlead role. See `doc/process/orchestration.md` for the proc
 
 ---
 
+## Iteration 4 — harness-steady-state
+
+- **Started:** 2026-04-25
+- **Status:** merged
+- **Branch:** `iter/04-harness-steady-state` (merged into `main`)
+- **Goal:** introduce the `Regime` abstraction on both sides of the language boundary. Java side: `Regime` interface + `RegimeRegistry` + `SteadyStateRegime` implementing R1. Rust side: `Regime` trait in `gc-forge-regimes` + typed `SteadyStateParams` + `workload_args` translator. Refs: SPEC-FONCTIONNELLE §4.1, SPEC-TECHNIQUE §4.3, §4.4.
+
+### Roles (this iteration)
+
+| Role | Agent | Note |
+|------|-------|------|
+| Teamlead   | A3 | was Coder in iter 3 |
+| Coder      | A4 | was Reviewer in iter 3 |
+| Reviewer   | A5 | was Tester-unit in iter 3 |
+| Tester-unit | A6 | was Tester-func in iter 3 |
+| Tester-func | A1 | was Doc-writer in iter 3 |
+| Doc-writer | A2 | was Teamlead in iter 3 |
+
+Rotation rule satisfied.
+
+### Plan
+
+1. Java: split monolithic `WorkloadHarness` into `Regime` interface, `RegimeRegistry` and `SteadyStateRegime`. Keep a no-args fallback so `make demo` does not regress.
+2. Java: implement R1 with the four documented parameters and a `Random`-driven, seed-deterministic chunk picker.
+3. Rust: `Regime` trait in `gc-forge-regimes` (`id`, `workload_args`, `expected_phenomena`, `expected_invariant_rules`). `SteadyStateParams` is the typed view; `from_yaml(parameters)` accepts defaults and rejects unknown keys.
+4. Test both sides in isolation. The full pipeline (scenario → regime → runner → log validation) lands in iter 5.
+
+### Decisions log
+
+- **Java parameter encoding**: positional `[kind] [duration] [seed]` followed by `key=value` pairs. Rationale: avoids pulling Jackson or javax.json into the harness, keeps the wire format inspectable in plain `docker run` invocations, lets future regimes register their own parser without contaminating `RegimeRegistry`.
+- **Rust regime trait stays small** (no `validate` yet). Validation against parsed logs lands in iter 13 alongside the parser; `expected_invariant_rules` returns the rules-as-strings now so the manifest in iter 5 can carry them.
+- **Defaults policy**: missing parameter ⇒ regime's documented default (per SPEC-FONCTIONNELLE §4.1 for R1). Unknown parameter ⇒ typed error. Wrong type ⇒ typed error. Validation happens in Rust; Java trusts Rust to have already rejected garbage.
+- **Backward-compatibility for `make demo`**: when invoked without arguments, the harness defaults to `steady-state-healthy PT10S 0xC0FFEE`. Doc-writer notes this in `cli-reference.md`.
+
+### Metrics (at merge)
+
+- Rust unit tests: 78/78 passed (15 new in `gc-forge-regimes` + 63 from earlier crates).
+- Java unit tests: 18/18 passed (9 new `SteadyStateRegimeTest` + 9 expanded `WorkloadHarnessTest`).
+- `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`: clean.
+- `mvn verify`: green (Maven build also produces JaCoCo report).
+- DoD-gate (phase 1): green.
+
+### Decisions taken in flight
+
+- **Default impl Default for `SteadyStateParams`** rather than `#[derive(Default)]` because the documented defaults (50 MiB/s, 100 MiB live set) are not the type's natural zero — they are spec-mandated values that benefit from being centralised in one place.
+- **`iso_duration` collapses days into hours**: `PT24H` rather than `P1D`. JVM's `Duration.parse` accepts both, and this keeps the formatter monotone in seconds (no `T`-vs-no-`T` branch). Originally the function had a separate day branch but it was dead-equivalent to the hour branch; clippy caught it via `if_same_then_else`.
+- **Java parameter encoding stayed positional + key=value** (no Jackson). The harness's only third-party deps remain JUnit (test-scope) and the JaCoCo agent. The deterministic-seed test (`chunk_sizer_is_seed_deterministic`) confirms the design holds.
+- **`Box<dyn Regime>` is not `Debug`**: the test for `resolve(unknown)` therefore can't `unwrap_err()`. Switched to a manual `match` that's just as terse and avoids forcing `Debug` on the trait. If we ever need `Debug`, we can add it as a super-trait later.
+- **Backward-compat fallback in `WorkloadHarness.main`**: zero-args runs `steady-state-healthy PT10S 0xC0FFEE`. This keeps `make demo` working without changing its target. The fallback is exercised by a unit test (`no_args_falls_back_to_default_steady_state`).
+
+### Bilan
+
+The Regime abstraction cleanly bridges the Rust and Java sides. On the Rust side, a `Scenario` becomes a `Vec<String>` of harness CLI args via `Regime::workload_args` — a pure transformation that's already covered by 11 dedicated unit tests for R1. On the Java side, the harness reads those args through a typed registry and dispatches to the regime implementation; another 18 tests verify each layer in isolation.
+
+The R1 implementation is also the template for the next six regimes (R2–R7 in iters 7–12). Each will follow the same shape: a typed `Params` struct in Rust with `from_yaml`, a `Regime` impl that builds workload args, and a Java class registered in `RegimeRegistry`. The `make demo` and Docker runner integration test still pass because the no-args fallback preserves iter 1's behaviour.
+
+Two soft items deferred:
+1. **Allocation rate self-clamping**: the rate-limiting loop in `SteadyStateRegime` is naïve (busy-allocate then sleep to fill the second). Real workloads will need finer control. Deferred to iter 7 or beyond once we have variance data.
+2. **Survivor pool memory accounting**: the survivor cap is `liveSetCap / 10` rather than configurable. The `lifetime_distribution: mixed` semantics in the spec leave room for tweaking — keeping it simple now, will revisit once R5 (`cache-churn`) lands and surfaces overlapping requirements.
+
+Iteration 5 (`run-end-to-end`) can start: the runner has its scenario→argv translator (this iteration), its JVM launcher (iter 3), its scenario parser (iter 2), and its bootstrap harness (iter 1). Wiring `gc-forge run` into a single command is now a composition exercise, not new design work.
+
+---
+
 ## Iteration 3 — docker-runner-mvp
 
 - **Started:** 2026-04-25
