@@ -7,6 +7,30 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ### Added
 
+- **Complete user documentation (iter 16).**
+    - `doc/pitch.md` — one-page elevator pitch covering the problem,
+      what GC-Forge does, target audiences, what ships in 0.1.0,
+      and what comes next.
+    - `doc/traceability.md` — phenomena × presets × GC-Insight detector
+      matrix per SPEC-FONCTIONNELLE §11. The detector column carries
+      `<TODO: detector-id>` placeholders until GC-Insight publishes
+      stable detector identifiers; the GC-Forge-internal columns are
+      frozen for 0.1.0.
+    - `doc/user/README.md` — index that orders the four user-facing
+      pages (`getting-started`, `regimes`, `scenario-reference`,
+      `cli-reference`) for first-contact reading.
+    - `doc/user/getting-started.md` — install stanza now reflects the
+      from-source path; the batch and validate sections are filled in;
+      a Troubleshooting section captures the recurring footguns
+      encountered during MVP development (Docker entrypoint clash,
+      macOS `/tmp` mount, stale runner image, faithful-duration vs.
+      truncated CI runs).
+    - `doc/user/cli-reference.md` and `doc/user/scenario-reference.md`:
+      residual `_TODO iter N_` markers removed; surface frozen for
+      0.1.0.
+    - Top-level `README.md` upgraded with a Quickstart stanza pointing
+      at the user docs.
+
 - **Embedded preset catalogue.** `gc-forge-presets` now ships every `presets/*.yaml` body inside the binary via a `build.rs` script. `cargo install gc-forge-cli` installs a self-sufficient tool. `list_preset_names()`, `all_presets()`, `embedded_yaml(name)` are the public lookup helpers.
 - `gc-forge presets list/show/export` subcommands. `list` shows name + algorithm + regime; presets using `extends:` are listed with an `(extends another preset)` annotation. `show` and `export` print the YAML body to stdout.
 - `gc-forge selftest`: runs every embedded preset through the orchestrator, validates each log, exits `3` if any preset's validator failed. `--per-preset-duration` (default `12s`) keeps the full pass under ~3 minutes for nightly CI.

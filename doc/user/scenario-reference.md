@@ -122,7 +122,7 @@ also accepted and treated as a byte count.
 
 | Field        | Type           | Required | Notes |
 |--------------|----------------|----------|-------|
-| `kind`       | string         | yes      | One of the seven MVP regimes; see `doc/user/regimes.md` (TODO iter 16). |
+| `kind`       | string         | yes      | One of the seven MVP regimes; see [`regimes.md`](regimes.md). |
 | `parameters` | free-form map  | no       | Schema is regime-specific; validated at run time, not at parse time. |
 
 ## `spec.duration`, `spec.warmup`

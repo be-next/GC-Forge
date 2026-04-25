@@ -1,7 +1,8 @@
 # CLI reference
 
-> **Status:** skeleton — content lands alongside the corresponding feature
-> iterations. Sections marked `_TODO iter N_` ship with that iteration.
+This page documents every subcommand shipped in 0.1.0. Each section
+lists flags, defaults and exit codes; per-feature behaviour lives in
+the matching crate's tests.
 
 ## Synopsis
 
@@ -10,12 +11,12 @@ gc-forge [OPTIONS] <SUBCOMMAND>
 
 Subcommands:
   lint              Validate a scenario file without launching a JVM.
-  run               Run a scenario.                       _TODO iter 5_
-  validate          Re-check a log against a manifest.    _TODO iter 13_
-  batch             Run a matrix of scenarios.            _TODO iter 14_
-  presets           List, show, export shipped presets.   _TODO iter 15_
-  selftest          Run all presets and report.           _TODO iter 15_
-  variance-check    Measure inter-run variance on a preset. _TODO iter 15_
+  run               Run a scenario.
+  validate          Re-check a log against a manifest.
+  batch             Run a matrix of scenarios.
+  presets           List, show, export shipped presets.
+  selftest          Run all presets and report.
+  variance-check    Measure inter-run variance on a preset.
 ```
 
 ## Global options
@@ -23,9 +24,11 @@ Subcommands:
 ```
 -v, -vv, -vvv         Increase verbosity (tracing levels: info, debug, trace).
     --quiet           Suppress all non-error output.
-    --output <fmt>    Switch on machine output (`json`).            _TODO iter 5_
     --no-color        Disable ANSI colours; `NO_COLOR` is also honoured.
 ```
+
+A machine-readable `--output json` mode is reserved for V1; for now,
+parse the manifests written next to each log — they are the contract.
 
 ## Exit codes
 

@@ -5,6 +5,69 @@ Maintained by the Teamlead role. See `doc/process/orchestration.md` for the proc
 
 ---
 
+## Iteration 16 — doc-user
+
+- **Started:** 2026-04-25
+- **Status:** merged
+- **Branch:** `iter/16-doc-user` (merged into `main`)
+- **Goal:** close the user-documentation loop. Polish existing pages, write `doc/pitch.md` (1 page, "why GC-Forge"), seed `doc/traceability.md` (phenomenon × preset × insight-capability matrix per SPEC §11), add a doc index. Refs: ROADMAP.md §6.
+
+### Roles (this iteration)
+
+| Role | Agent | Note |
+|------|-------|------|
+| Teamlead   | A3 | was Coder in iter 15 |
+| Coder      | A4 | was Reviewer in iter 15 |
+| Reviewer   | A5 | was Tester-unit in iter 15 |
+| Tester-unit | A6 | was Tester-func in iter 15 |
+| Tester-func | A1 | was Doc-writer in iter 15 |
+| Doc-writer | A2 | was Teamlead in iter 15 |
+
+Rotation rule satisfied. Doc-writer holds the pen this iteration; Coder is largely a reviewer/proofreader.
+
+### Plan
+
+1. `doc/pitch.md` — 1-page elevator pitch: problem, what GC-Forge does, who it's for, what it ships in 0.1.0.
+2. `doc/traceability.md` — table of `phenomenon × preset × insight-capability` rows. Filling the third column with placeholders (`<TODO when GC-Insight detector lands>`) since we don't have a stable list of GC-Insight detector identifiers yet.
+3. `doc/user/README.md` — small index linking the four user docs in the right reading order.
+4. Polish: drop residual `_TODO iter N_` markers across user docs, add cross-links, normalise the "Available since: iteration N" annotations.
+5. Top-level `README.md` update: add a "Quickstart" stanza pointing at the user docs.
+
+### Decisions log
+
+- **`doc/traceability.md` ships with placeholders** for the GC-Insight column. SPEC §11 says the matrix needs the three columns; the first two are GC-Forge-internal and stable. The third column lands when GC-Insight publishes its detector ids (not blocking 0.1.0).
+- **Pitch document is for internal/external pitch**, not for marketing copy. Plain prose, no marketing flourish, ~400 words.
+- **No new `gc-forge` subcommand or feature** in iter 16 — pure doc work, which keeps the iteration short and lets iter 17 start from a clean branch tomorrow.
+
+### Metrics (at merge)
+
+- Files added: `doc/pitch.md`, `doc/traceability.md`, `doc/user/README.md`.
+- Files updated: `doc/user/getting-started.md` (Install + Batch + Validate + Troubleshooting), `doc/user/cli-reference.md` (header), `doc/user/scenario-reference.md` (broken link fixed), `README.md` (status + Quickstart), `CHANGELOG.md`.
+- Tests: 191 Rust + 61 Java + 8 Docker = **260** passing (unchanged — no code touched).
+- DoD-gate: green (phase 1 — fmt, clippy, test, mvn verify, no high bug).
+- BUGS.md: still 0 high / 0 medium open after iteration.
+
+### Bilan
+
+Iter 16 closes the user-documentation loop ahead of release. Three new
+docs (`pitch.md`, `traceability.md`, `doc/user/README.md`) and four
+substantive updates to existing pages remove every `_TODO iter N_`
+marker from the user surface. The traceability matrix's third column
+deliberately ships with `<TODO: detector-id>` placeholders — that
+contract is owned by GC-Insight and is not blocking for 0.1.0; the
+first two columns (phenomenon → presets) are frozen.
+
+The Quickstart in the top-level `README.md` now mirrors the path a
+first-time user actually walks (build → image → lint → run → validate),
+which closes the gap between the spec-driven framing and the
+working software.
+
+No code was touched in iter 16, so test counts and coverage are
+unchanged. Iter 17 (`release-pipeline`) starts clean with the doc set
+frozen.
+
+---
+
 ## Iteration 15 — selftest-variance
 
 - **Started:** 2026-04-25

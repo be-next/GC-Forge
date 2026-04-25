@@ -6,13 +6,44 @@ Where Insight observes, Forge fabricates: from a YAML description of a `(JVM, GC
 
 ## Project status
 
-**Specs phase** — implementation pending. See [`doc/specs/`](./doc/specs/) for the full specifications (in French):
+**Pre-release of 0.1.0.** The seven MVP regimes are implemented, fourteen
+presets ship in-tree, and every CLI subcommand
+(`lint`, `run`, `validate`, `batch`, `presets`, `selftest`,
+`variance-check`) is operational. The release pipeline lands in the
+final iteration before tagging `v0.1.0`.
+
+User documentation lives under [`doc/user/`](./doc/user/README.md).
+Internal specifications (in French) live under
+[`doc/specs/`](./doc/specs/):
 
 - [Functional specifications](./doc/specs/SPEC-FONCTIONNELLE.md)
 - [Technical specifications](./doc/specs/SPEC-TECHNIQUE.md)
 - [Roadmap](./doc/specs/ROADMAP.md)
 - [Initial backlog](./doc/specs/BACKLOG.md)
 - [Risks and open points](./doc/specs/RISQUES.md)
+
+## Quickstart
+
+```sh
+# Build the CLI and the runner image once.
+make build
+make docker-image
+
+# Lint, then run a shipped preset.
+gc-forge lint presets/steady-g1-baseline.yaml
+gc-forge run  presets/steady-g1-baseline.yaml \
+    --image gc-forge-runner:dev-jdk21 \
+    --embedded-harness /opt/gc-forge/harness.jar
+
+# Re-check the produced log against its manifest.
+gc-forge validate out/steady-g1-baseline-c0ffee.log \
+    --manifest  out/steady-g1-baseline-c0ffee.manifest.yaml
+```
+
+A walk-through with troubleshooting tips is in
+[`doc/user/getting-started.md`](./doc/user/getting-started.md);
+the full CLI surface is in
+[`doc/user/cli-reference.md`](./doc/user/cli-reference.md).
 
 ## Use cases
 
