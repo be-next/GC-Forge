@@ -5,6 +5,121 @@ Maintained by the Teamlead role. See `doc/process/orchestration.md` for the proc
 
 ---
 
+## Iteration 17 — release-pipeline
+
+- **Started:** 2026-04-25
+- **Status:** merged — **MVP 0.1.0 release-ready (human-gated steps remain)**
+- **Branch:** `iter/17-release-pipeline` (merged into `main`)
+- **Goal:** stand up the release plumbing for `v0.1.0` and stop *just
+  before* the four human-gated actions (push, tag, crates.io publish,
+  GHCR publish). Refs: ROADMAP.md §6, plan §"Critère d'aboutissement".
+
+### Roles (this iteration)
+
+| Role | Agent | Note |
+|------|-------|------|
+| Teamlead   | A4 | was Coder in iter 16 |
+| Coder      | A5 | was Reviewer in iter 16 |
+| Reviewer   | A6 | was Tester-unit in iter 16 |
+| Tester-unit | A1 | was Tester-func in iter 16 |
+| Tester-func | A2 | was Doc-writer in iter 16 |
+| Doc-writer | A3 | was Teamlead in iter 16 |
+
+Rotation rule satisfied (no agent holds the same role two iterations
+in a row). Critical-skill check: A5 (Coder) has touched the CI
+workflow before in iter 1.
+
+### Plan
+
+1. **Workspace version bump** — `Cargo.toml` workspace `version` and
+   internal `gc-forge-*` deps lifted from `0.0.1-dev` to `0.1.0`.
+   Regenerate `Cargo.lock`.
+2. **`.github/workflows/release.yml`** — matrix build of the CLI on
+   four targets (linux x86_64, linux aarch64, macOS x86_64, macOS
+   aarch64), plus two human-gated stages (`publish-crates`,
+   `publish-docker`) hidden behind a `release` GitHub environment so
+   they can never run unintentionally.
+3. **`CHANGELOG.md`** — convert the accumulated `[Unreleased]`
+   section into `[0.1.0] — 2026-04-25` with a top-of-section summary
+   and a fresh empty `[Unreleased]` heading.
+4. **`doc/process/orchestration.md`** — append a "Release procedure"
+   section that documents the four human-gated steps and the
+   rollback procedure.
+5. **`README.md`** — status banner from "Pre-release of 0.1.0" to
+   "0.1.0 — first MVP release", `[Unreleased]` link section update.
+
+### Decisions log
+
+- **Crates.io and GHCR publishing are gated by a GitHub environment**,
+  not by branch protection alone. This is the only way to guarantee
+  that a tag push cannot silently publish before a human approves.
+  The `release` environment will need a one-time setup on GitHub
+  (required reviewers list); that is out-of-scope for this iteration
+  but documented in the release procedure.
+- **`cargo publish` order is fixed**: `scenario` → `regimes` →
+  `runner` → `validate` → `presets` → `cli`. This matches the
+  internal dependency DAG (cli depends on everyone, presets on
+  scenario, etc.). Each step uses `--dry-run` first; the workflow
+  fails closed.
+- **Docker tags are `ghcr.io/<org>/gc-forge:<version>` and `:latest`**.
+  The `<org>` placeholder is left literal in the workflow because we
+  do not yet know the final GitHub org; the operator substitutes it
+  before pushing the tag.
+- **Schema files (`schemas/*.json`) are regenerated as a sanity
+  check** but expected to be byte-identical to the iter-15 versions —
+  no model field changed in iter 16. If they diverge, that is a
+  bug.
+
+### Metrics (at merge)
+
+- Files added: `.github/workflows/release.yml`.
+- Files updated: `Cargo.toml`, `Cargo.lock` (workspace 0.0.1-dev → 0.1.0),
+  `CHANGELOG.md` ([Unreleased] cut over to [0.1.0] — 2026-04-25),
+  `doc/process/orchestration.md` (Release procedure section),
+  `README.md` (status banner).
+- Tests: 191 Rust + 61 Java + 8 Docker = **260** passing — unchanged.
+- DoD-gate: green (phase 1 — fmt, clippy, test, mvn verify, no high bug).
+- `gc-forge --version` → `0.1.0`.
+- BUGS.md: still 0 high / 0 medium open at end of iteration.
+
+### Bilan
+
+Iter 17 closes the MVP backbone. All 17 planned iterations are now
+merged into `main`. The local working copy is **release-ready**:
+
+- workspace metadata + version bump,
+- `release.yml` matrix workflow with human-gated `release` environment
+  for the two publish stages (crates.io and GHCR),
+- `CHANGELOG.md` carries a dated `[0.1.0] — 2026-04-25` section with
+  release highlights,
+- `doc/process/orchestration.md` documents the four human-gated
+  steps and the rollback procedure,
+- 26 commits ahead of `origin/main`.
+
+**Loop stops here.** Per the autonomy boundary recorded in the
+project's memory, the four remaining steps are the operator's:
+
+1. `git push origin main` — propagate the local commits.
+2. `git tag -a v0.1.0 -m "GC-Forge 0.1.0" && git push origin v0.1.0`
+   — triggers the release workflow.
+3. Approve the `release` environment on GitHub (one approval per
+   gated job: `publish-crates` then `publish-docker`).
+4. Promote the GitHub Release from draft to public after reviewing
+   the auto-generated notes against `CHANGELOG.md`.
+
+There is no follow-up iteration scheduled. Phase 4 of the roadmap
+(Native runner + Homebrew tap) is decided by the operator at this
+jalon based on residual capacity.
+
+### Escalation note (loop terminates)
+
+The loop has reached its **aboutissement** condition (iter 17 merged
+on `main`). It does not schedule the next tick. The commit graph is
+in a consistent state; the operator can resume at any time by running
+the four steps above.
+
+---
+
 ## Iteration 16 — doc-user
 
 - **Started:** 2026-04-25

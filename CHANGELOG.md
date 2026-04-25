@@ -5,6 +5,40 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ## [Unreleased]
 
+_(no entries — main is at 0.1.0)_
+
+## [0.1.0] — 2026-04-25
+
+First public release of GC-Forge — the declarative generator of Java GC
+logs that pairs with GC-Insight.
+
+### Highlights
+
+- **Seven application regimes** (steady-state-healthy,
+  allocation-burst, humongous-pressure, slow-leak, cache-churn,
+  mixed-gc-pathological, microservice-stop-and-go) implemented on
+  both sides (Rust regime + Java harness regime).
+- **Three GC collectors** on Temurin 17 and 21: G1, generational ZGC,
+  Parallel.
+- **Fourteen presets** shipped in-tree and embedded in the binary:
+  `steady-{g1,zgc,parallel}-baseline`, `burst-{g1,parallel}-30s`,
+  `humongous-g1-{classic,evac-fail}`, `leak-{g1,zgc}-slow`,
+  `cache-{g1,parallel}-churn`, `mixed-pathological-g1`,
+  `microservice-{g1,zgc}-stop-go`.
+- **Seven CLI subcommands**: `lint`, `run`, `validate`, `batch`,
+  `presets list/show/export`, `selftest`, `variance-check`.
+- **Three frozen wire formats** with JSON Schemas:
+  `gc-forge/scenario.v1`, `gc-forge/run-manifest.v1`,
+  `gc-forge/matrix.v1`.
+- **Reproducible by construction**: every run writes a manifest
+  carrying the resolved scenario, JVM flags, host fingerprint, seed,
+  GC-log SHA-256 and harness JAR SHA-256.
+- **Docker MVP runner** (eclipse-temurin:{17,21}-jdk-jammy) with
+  `--rm --network=none --entrypoint=java` and an embedded-harness
+  mode for the GC-Forge runner image.
+- **Open-source MIT** dual licence + workspace metadata complete for
+  crates.io publication.
+
 ### Added
 
 - **Complete user documentation (iter 16).**

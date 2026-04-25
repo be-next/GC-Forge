@@ -10,7 +10,7 @@ members = [
 ]
 
 [workspace.package]
-version = "0.0.1-dev"
+version = "0.1.0"
 edition = "2021"
 rust-version = "1.94"
 authors = ["Jérôme Ramette"]
@@ -23,11 +23,11 @@ categories = ["development-tools", "command-line-utilities"]
 
 [workspace.dependencies]
 # Internal crates — referenced via path within the workspace
-gc-forge-scenario = { path = "crates/gc-forge-scenario", version = "0.0.1-dev" }
-gc-forge-regimes  = { path = "crates/gc-forge-regimes",  version = "0.0.1-dev" }
-gc-forge-runner   = { path = "crates/gc-forge-runner",   version = "0.0.1-dev" }
-gc-forge-validate = { path = "crates/gc-forge-validate", version = "0.0.1-dev" }
-gc-forge-presets  = { path = "crates/gc-forge-presets",  version = "0.0.1-dev" }
+gc-forge-scenario = { path = "crates/gc-forge-scenario", version = "0.1.0" }
+gc-forge-regimes  = { path = "crates/gc-forge-regimes",  version = "0.1.0" }
+gc-forge-runner   = { path = "crates/gc-forge-runner",   version = "0.1.0" }
+gc-forge-validate = { path = "crates/gc-forge-validate", version = "0.1.0" }
+gc-forge-presets  = { path = "crates/gc-forge-presets",  version = "0.1.0" }
 
 # Common third-party dependencies (versions pinned at workspace level so all
 # crates use the same; pulled in only by the crates that need them).

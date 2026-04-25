@@ -96,7 +96,83 @@ When iteration 17 reaches the point where the release tag is the only remaining 
 | `scripts/dod-gate.sh` | Coder (iter 1) | Gate 3. |
 | `.github/workflows/ci.yml` | Coder (iter 1) | Continuous integration. |
 
+## Release procedure
+
+The release of `v0.1.0` (and every subsequent release) is the
+intersection of CI automation and a small set of human-gated steps.
+The CI definition lives in `.github/workflows/release.yml`. The
+human steps below are deliberately **not** automated — they are the
+boundary between the autonomous loop and the operator.
+
+### Pre-release checklist (before tagging)
+
+1. `main` is at the version that should be released (workspace
+   `Cargo.toml` and `Cargo.lock` agree).
+2. `CHANGELOG.md` has a dated section for that version (no
+   `[Unreleased]` entries below it).
+3. `scripts/dod-gate.sh` exits 0.
+4. `gc-forge selftest` is green on every shipped preset, ideally
+   under faithful (non-truncated) durations.
+5. Every iteration's bilan is in `ITERATION-LOG.md`; no `high`/
+   `critical` bug is open in `BUGS.md`.
+
+### Human-gated steps (in order)
+
+These four actions are external and non-reversible. The autonomous
+loop **must not** perform them; it stops at the merge of the release
+iteration with everything in place locally.
+
+1. **Push `main` to origin.**
+   `git push origin main` — propagates every accumulated commit since
+   the previous release. Run this first so the tag in step 2 lands on
+   a public commit.
+2. **Create and push the annotated tag.**
+   ```sh
+   git tag -a vX.Y.Z -m "GC-Forge X.Y.Z"
+   git push origin vX.Y.Z
+   ```
+   The tag push triggers `.github/workflows/release.yml`. The
+   `build-cli` matrix runs immediately. The `publish-crates` and
+   `publish-docker` jobs *halt waiting for approval* on the
+   `release` GitHub environment.
+3. **Approve the `release` environment runs** in the GitHub UI (one
+   approval per gated job). `publish-crates` walks the six crates in
+   topological order; if any crate fails, fix it on a follow-up patch
+   release rather than retrying the same tag. `publish-docker`
+   pushes `ghcr.io/<org>/gc-forge:X.Y.Z` and `:latest`.
+4. **Promote the GitHub Release from draft to public.** The
+   `build-cli` job uploads the four `.tar.gz` archives to a draft
+   release; review the auto-generated notes against `CHANGELOG.md`,
+   edit, then publish.
+
+### Required GitHub configuration (one-time)
+
+- **`release` environment** with:
+    - required reviewers: at least one repo admin;
+    - secret `CARGO_REGISTRY_TOKEN`: a crates.io token scoped to
+      publishing the six `gc-forge-*` crates.
+- **`packages: write` permission** on the default `GITHUB_TOKEN` is
+  the only thing `publish-docker` needs (set in the workflow).
+- **Branch protection on `main`** with a passing `ci` workflow
+  required.
+
+### Rollback procedure
+
+If a `publish-crates` job partially succeeds (some crates uploaded,
+others not) **do not** force a retry of the same tag — crates.io is
+append-only. Instead:
+
+1. Yank the partially-published crates with `cargo yank --vers X.Y.Z
+   <crate>`. (Yanking is reversible in the metadata sense; the file
+   stays accessible to existing lockfiles.)
+2. Cut a `X.Y.Z+1` patch tag with the fix and walk the procedure
+   again from step 1.
+
+For `publish-docker`, the latest tag overwrite is fine on retry; the
+multi-arch manifest will simply point at the new build.
+
 ## References
 
 - Implementation plan: `/Users/jerome/.claude/plans/ok-partout-structured-feather.md` (working copy; this file is the durable, in-tree counterpart).
 - Specifications: `doc/specs/SPEC-FONCTIONNELLE.md`, `doc/specs/SPEC-TECHNIQUE.md`, `doc/specs/ROADMAP.md`, `doc/specs/RISQUES.md`, `doc/specs/BACKLOG.md`.
+- Release workflow: `.github/workflows/release.yml`.

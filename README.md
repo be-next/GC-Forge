@@ -6,11 +6,15 @@ Where Insight observes, Forge fabricates: from a YAML description of a `(JVM, GC
 
 ## Project status
 
-**Pre-release of 0.1.0.** The seven MVP regimes are implemented, fourteen
-presets ship in-tree, and every CLI subcommand
+**0.1.0 — first MVP release.** The seven MVP regimes are implemented,
+fourteen presets ship in-tree, and every CLI subcommand
 (`lint`, `run`, `validate`, `batch`, `presets`, `selftest`,
-`variance-check`) is operational. The release pipeline lands in the
-final iteration before tagging `v0.1.0`.
+`variance-check`) is operational. The release pipeline
+(`.github/workflows/release.yml`) builds prebuilt CLI binaries for
+Linux x86_64/aarch64 and macOS x86_64/aarch64, publishes the six
+`gc-forge-*` crates to crates.io, and pushes a multi-arch
+`ghcr.io/<org>/gc-forge` image — all gated on a manual approval on
+the `release` GitHub environment.
 
 User documentation lives under [`doc/user/`](./doc/user/README.md).
 Internal specifications (in French) live under

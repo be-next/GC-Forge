@@ -1,0 +1,201 @@
+name: release
+
+# Triggers:
+#   - tag push matching v*.*.* → full release (build + publish-crates + publish-docker)
+#   - workflow_dispatch        → build only, useful to dry-run from a feature branch
+#
+# Publishing stages are gated by the `release` GitHub environment, which
+# must require manual approval from a repository admin. Without that
+# environment configured, publish-* jobs will halt waiting for approval
+# and never silently push out an artefact.
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to attach to artefacts (no leading "v"). Skip for a dry-run build.'
+        required: false
+        default: ''
+
+env:
+  CARGO_TERM_COLOR: always
+  RUSTFLAGS: -D warnings
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build-cli:
+    name: build cli (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-gnu
+            os: ubuntu-latest
+          - target: aarch64-unknown-linux-gnu
+            os: ubuntu-latest
+            cross: true
+          - target: x86_64-apple-darwin
+            os: macos-13
+          - target: aarch64-apple-darwin
+            os: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain (pinned by rust-toolchain.toml)
+        run: rustup show
+
+      - name: Add target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Install cross-compilation linker (linux aarch64)
+        if: matrix.cross
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y gcc-aarch64-linux-gnu
+          mkdir -p .cargo
+          {
+            echo '[target.aarch64-unknown-linux-gnu]'
+            echo 'linker = "aarch64-linux-gnu-gcc"'
+          } >> .cargo/config.toml
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+
+      - name: cargo build --release
+        run: cargo build --release --locked --bin gc-forge --target ${{ matrix.target }}
+
+      - name: Strip binary (unix)
+        run: |
+          BIN=target/${{ matrix.target }}/release/gc-forge
+          if [ -f "$BIN" ]; then
+            ${{ matrix.cross && 'aarch64-linux-gnu-strip' || 'strip' }} "$BIN" || true
+          fi
+
+      - name: Resolve version
+        id: ver
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            VERSION="${GITHUB_REF#refs/tags/v}"
+          elif [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="dev-$(git rev-parse --short HEAD)"
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Package archive
+        shell: bash
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          NAME="gc-forge-${VERSION}-${{ matrix.target }}"
+          mkdir -p "dist/$NAME"
+          cp target/${{ matrix.target }}/release/gc-forge "dist/$NAME/"
+          cp README.md LICENSE CHANGELOG.md "dist/$NAME/"
+          (cd dist && tar czf "$NAME.tar.gz" "$NAME")
+          ls -lh dist/
+
+      - name: Upload artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: gc-forge-${{ matrix.target }}
+          path: dist/*.tar.gz
+          if-no-files-found: error
+
+      - name: Attach to GitHub Release (tag push only)
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.tar.gz
+          draft: true
+          generate_release_notes: true
+
+  publish-crates:
+    name: publish to crates.io
+    needs: build-cli
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: release
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust toolchain
+        run: rustup show
+
+      - name: Cache Cargo
+        uses: Swatinem/rust-cache@v2
+
+      # Topological order: a crate may only be published after all of its
+      # internal dependencies are on the registry.
+      - name: Publish gc-forge-scenario (dry-run)
+        run: cargo publish -p gc-forge-scenario --dry-run --locked
+      - name: Publish gc-forge-scenario
+        run: cargo publish -p gc-forge-scenario --locked
+        env: { CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }} }
+
+      - name: Publish gc-forge-regimes
+        run: cargo publish -p gc-forge-regimes --locked
+        env: { CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }} }
+
+      - name: Publish gc-forge-runner
+        run: cargo publish -p gc-forge-runner --locked
+        env: { CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }} }
+
+      - name: Publish gc-forge-validate
+        run: cargo publish -p gc-forge-validate --locked
+        env: { CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }} }
+
+      - name: Publish gc-forge-presets
+        run: cargo publish -p gc-forge-presets --locked
+        env: { CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }} }
+
+      - name: Publish gc-forge-cli
+        run: cargo publish -p gc-forge-cli --locked
+        env: { CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }} }
+
+  publish-docker:
+    name: publish docker image (ghcr)
+    needs: build-cli
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    environment: release
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: ver
+        run: echo "version=${GITHUB_REF#refs/tags/v}" >> "$GITHUB_OUTPUT"
+
+      - name: Set up QEMU (for arm64)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push (multi-arch)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/gc-forge:${{ steps.ver.outputs.version }}
+            ghcr.io/${{ github.repository_owner }}/gc-forge:latest

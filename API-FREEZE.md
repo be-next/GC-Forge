@@ -1,66 +1,122 @@
-# API freeze — iteration 13 (validate-cmd)
+# API freeze — iteration 17 (release-pipeline)
 
 Gate 1 artifact. Overwritten at every iteration before parallel work starts.
 
 ## Scope
 
-Stand up the GC log parser and invariant evaluator. Wires `gc-forge validate`.
-This is the iteration where the manifest's `validation` block transitions
-from "always Skipped" to actively-checked.
+Final iteration before tagging `v0.1.0`. **No application-level surface
+changes**: this iteration is exclusively about release plumbing.
 
 ## Public Rust surface added
 
-### Crate `gc-forge-validate`
+None. No crate adds or removes a public item. No CLI subcommand is
+added. The wire formats (`gc-forge/scenario.v1`,
+`gc-forge/run-manifest.v1`, `gc-forge/matrix.v1`) are frozen.
 
-| Item | Kind | Notes |
-|------|------|-------|
-| `ParsedLog`                    | struct | parsed view of a GC log |
-| `GcEvent`                      | struct | one collection event (kind, timestamp, pause_ms, heap before/after) |
-| `GcEventKind`                  | enum   | `Young`, `Mixed`, `Full`, `ConcurrentCycle` |
-| `parse_log(path)`              | fn     | reads + parses a log file |
-| `parse_log_text(&str)`         | fn     | parses a YAML-detached log string (for tests) |
-| `Invariant`                    | struct | `rule: String`, `threshold: yaml::Value`, `evaluate(&ParsedLog) -> Outcome` |
-| `Outcome`                      | enum   | `Passed`, `Failed { observed }`, `Skipped { reason }` |
-| `validate_manifest(manifest, log) -> ValidationRecord` | fn | high-level entry: turns expected invariants into a populated ValidationRecord |
-| `ParseError`                   | enum (thiserror) | I/O + line-shape errors |
+## Workspace version bump
 
-### Crate `gc-forge-cli`
+`Cargo.toml` (workspace) lifts the version pin:
 
-| Item | Kind | Notes |
-|------|------|-------|
-| `gc-forge validate` | clap subcommand | `<log>` `--manifest M` `[--update-manifest]` `[--manifest-format yaml|json]` |
+| File | Before | After |
+|------|--------|-------|
+| `Cargo.toml` `[workspace.package].version` | `0.0.1-dev` | `0.1.0` |
+| `Cargo.toml` `[workspace.dependencies].gc-forge-*.version` | `0.0.1-dev` | `0.1.0` |
 
-## Public Java surface added
+All six crates inherit `version.workspace = true`, so a single edit in
+the workspace propagates everywhere. `Cargo.lock` is regenerated.
 
-No change.
+## CI artefacts added
 
-## YAML schema changes
+- `.github/workflows/release.yml` — matrix release workflow, triggered
+  on tags matching `v*.*.*` and on `workflow_dispatch`. Stages:
+    1. **build-cli** matrix: linux-x86_64-gnu, linux-aarch64-gnu,
+       macos-x86_64, macos-aarch64. Each builds `gc-forge` (release
+       profile), strips, archives `gc-forge-${target}.tar.gz`,
+       uploads as workflow artefact, and (on tag) attaches to the
+       GitHub Release.
+    2. **publish-crates** (sequential, depends on build-cli): runs
+       `cargo publish` for the six crates in topological order
+       (`scenario` → `regimes` → `runner` → `validate` → `presets`
+       → `cli`). **Gated** on the `release` GitHub environment so a
+       human approves before any crate goes out. Reads
+       `secrets.CARGO_REGISTRY_TOKEN`.
+    3. **publish-docker**: `docker buildx` multi-arch build of
+       `Dockerfile`, tagged `ghcr.io/<org>/gc-forge:<version>` and
+       `ghcr.io/<org>/gc-forge:latest`. **Gated** on the `release`
+       environment. Reads `secrets.GITHUB_TOKEN` (default).
 
-None at the typed level. The manifest's `validation.results` field already
-exists from iter 5; iter 13 starts populating it with real data.
+  Both publish stages skip cleanly when triggered manually
+  without an explicit version (so the workflow is testable on a PR
+  without secrets).
 
-## Invariants for Tester-unit
+## CHANGELOG transition
 
-- `parse_log_text` extracts a `Pause Young` event from a Temurin-21 unified-log
-  line and surfaces its pause duration in ms.
-- `parse_log_text` distinguishes `Pause Young (Mixed)` from `Pause Young`.
-- `parse_log_text` flags `humongous regions:` and `Evacuation failure` lines.
-- `Invariant::evaluate` covers all the rule shapes listed in the iteration
-  plan; unknown rules return `Skipped`.
-- `validate_manifest` populates `ValidationRecord::status = Passed` when all
-  recognised rules pass and `Failed` when any rule fails.
-- The CLI integration test runs `gc-forge run ... && gc-forge validate ...` on
-  the steady-g1-baseline preset and asserts the resulting manifest's
-  `validation.status` is `Passed` or `Skipped` (never `Failed`).
+`CHANGELOG.md`:
+- The current `[Unreleased]` heading becomes `[0.1.0] — 2026-04-25`.
+- A fresh, empty `[Unreleased]` heading is added on top.
+- A new "Released" link table is added at the bottom per the
+  Keep-a-Changelog convention.
 
-## Doc sections to author (Doc-writer)
+## Documentation added
 
-- `doc/user/cli-reference.md` — drop the `_TODO iter 13_` marker on the
-  `validate` subcommand and document the rule grammar.
-- `CHANGELOG.md` — Unreleased: log parser, invariant evaluator,
-  `gc-forge validate` subcommand.
+- `doc/process/orchestration.md` — gains a final section
+  "Release procedure" describing the steps from "iter 17 merged"
+  to "tag pushed", which actions are human-gated, and the
+  rollback procedure.
 
-## Approval
+## Files outside scope (not touched)
 
-- Coder: A1 — frozen 2026-04-25
-- Reviewer: A2 — `Approved: A2 2026-04-25` (read against SPEC-FONCTIONNELLE §6.2 and §7.1; `Skipped`-by-default on unknown rules and threshold-from-YAML pattern noted as deliberate forward-compat).
+- `crates/**/src/`: no source change.
+- `workload-harness/src/`: no source change.
+- `presets/`: no preset change.
+- `schemas/`: regenerated only if `cargo run -p gc-forge-cli --bin
+  gen-schema` produces a diff (it should not, since no model field
+  changed).
+- `BUGS.md`: no new bug expected from this iteration.
+
+## Tester-unit checklist
+
+- `cargo build --release --workspace` still succeeds at version
+  `0.1.0`.
+- `cargo package --workspace --no-verify` exits clean for every
+  crate (sanity check on metadata).
+- `cargo test --workspace --locked` stays at 191 tests passing.
+- `mvn -f workload-harness/pom.xml verify` stays at 61 tests passing.
+
+## Tester-func checklist
+
+- `gc-forge --version` prints `0.1.0`.
+- `make build && make demo` still produces a GC log.
+- `gc-forge selftest` (with truncated `--per-preset-duration`) stays
+  green on all 14 presets.
+
+## Doc-writer checklist
+
+- `CHANGELOG.md`: cut the 0.1.0 release notes from the accumulated
+  Unreleased entries, with a chronological summary at the top.
+- `README.md`: status banner moves from "Pre-release of 0.1.0" to
+  "0.1.0 — first MVP release".
+- `doc/process/orchestration.md`: append the release procedure.
+
+## Out of scope for iter 17 (escalation required)
+
+The following actions are deliberately NOT performed by the loop, per
+the autonomy boundary documented in `feedback_autonomy`:
+
+1. `git push origin main` — the 25 (now 26) commits ahead of origin
+   stay local.
+2. `git tag v0.1.0` — the tag would auto-trigger crates.io and GHCR
+   publishes via the `release.yml` workflow; both are external,
+   non-reversible actions.
+3. `cargo publish` — six crates would land on crates.io; the names
+   `gc-forge-*` get reserved permanently on first publish.
+4. `docker push ghcr.io/...` — would publish a multi-arch image
+   from this machine without going through CI.
+
+These four actions are the operator's responsibility. The loop stops
+at the merge of iter 17 with everything in place locally and an
+explicit escalation note in `ITERATION-LOG.md`.
+
+---
+
+Approved: A6 (Reviewer) — 2026-04-25.
