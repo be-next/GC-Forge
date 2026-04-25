@@ -20,6 +20,7 @@ pub mod duration;
 pub mod error;
 mod extends;
 mod loader;
+pub mod manifest;
 pub mod overrides;
 pub mod scenario;
 pub mod schema;
@@ -27,6 +28,12 @@ pub mod schema;
 pub use byte_size::{ByteSize, ParseByteSizeError};
 pub use duration::{Duration, ParseDurationError};
 pub use error::{Result, ScenarioError};
+pub use manifest::{
+    render_manifest_schema, sha256_hex, sha256_hex_bytes, ExitStatusRecord,
+    ExpectedInvariantRecord, HostMeta, JvmRecord, OutputRecord, ReproducibilityRecord, RunManifest,
+    RunMeta, ScenarioRecord, ValidationRecord, ValidationResult, ValidationStatus,
+    MANIFEST_API_VERSION, MANIFEST_KIND,
+};
 pub use overrides::Override;
 pub use scenario::{
     Distribution, ExpectedClause, GcAlgorithm, GcOptions, GcSpec, HeapConfig, InvariantRule,

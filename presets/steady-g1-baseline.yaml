@@ -1,0 +1,45 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+metadata:
+  name: steady-g1-baseline
+  version: 1.0.0
+  description: |
+    Reference baseline — G1 collector on Temurin 21 under a steady-state-healthy
+    workload at 50 MiB/s allocation rate, 100 MiB live set. The expected
+    fingerprint: ≥ 80% young collections, no full GCs, p99 young pause < 50 ms.
+  tags: [mvp, baseline, g1, steady-state]
+  authors: ["GC-Forge MVP"]
+
+spec:
+  jvm:
+    vendor: temurin
+    major: 21
+
+  gc:
+    algorithm: G1
+    options:
+      heap:
+        min: 2g
+        max: 2g
+
+  regime:
+    kind: steady-state-healthy
+    parameters:
+      allocation_rate_mb_s: 50
+      live_set_mb: 100
+      object_size_distribution: mixed
+      lifetime_distribution: mixed
+
+  duration: 90s
+  warmup: 10s
+  seed: 0xC0FFEE
+
+  expected:
+    phenomena:
+      - young_gc_steady
+    invariants:
+      - { rule: "young_ratio >= 0.8",            threshold: 0.8 }
+      - { rule: "full_count == 0",               threshold: 0 }
+      - { rule: "p99_pause_ms < 50",             threshold: 50 }
+      - { rule: "variance_pause_count_pct < 5",  threshold: 5 }

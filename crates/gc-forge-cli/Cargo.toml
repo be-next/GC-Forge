@@ -19,8 +19,12 @@ path = "src/main.rs"
 [dependencies]
 anyhow      = { workspace = true }
 clap        = { workspace = true }
+thiserror   = { workspace = true }
 tracing     = { workspace = true }
 tracing-subscriber = { workspace = true }
+chrono      = { workspace = true }
+uuid        = { workspace = true }
+serde_yaml  = { workspace = true }
 gc-forge-scenario = { workspace = true }
 gc-forge-regimes  = { workspace = true }
 gc-forge-runner   = { workspace = true }

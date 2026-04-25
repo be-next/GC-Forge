@@ -39,10 +39,11 @@ mod tests {
         assert!(s.contains("\"title\": \"Scenario\""));
     }
 
-    /// Fails if the on-disk schema has drifted from what `render_schema`
-    /// produces. Regenerate with `cargo run -p gc-forge-scenario --bin gen-schema`.
+    /// Fails if the on-disk scenario schema has drifted from what
+    /// `render_schema` produces. Regenerate with
+    /// `cargo run -p gc-forge-scenario --bin gen-schema`.
     #[test]
-    fn schema_matches_disk() {
+    fn scenario_schema_matches_disk() {
         let path = schema_path();
         let on_disk = std::fs::read_to_string(&path).unwrap_or_else(|_| {
             panic!(
@@ -53,7 +54,30 @@ mod tests {
         let fresh = render_schema().unwrap();
         assert!(
             on_disk == fresh,
-            "JSON schema drifted from {}.\n\
+            "scenario JSON schema drifted from {}.\n\
+             Regenerate with: cargo run -p gc-forge-scenario --bin gen-schema",
+            path.display()
+        );
+    }
+
+    /// Same drift contract for the run manifest schema.
+    #[test]
+    fn run_manifest_schema_matches_disk() {
+        let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(|p| p.parent())
+            .map(|root| root.join("schemas/run-manifest-v1.json"))
+            .expect("workspace root");
+        let on_disk = std::fs::read_to_string(&path).unwrap_or_else(|_| {
+            panic!(
+                "{} does not exist — run `cargo run -p gc-forge-scenario --bin gen-schema` to create it.",
+                path.display()
+            )
+        });
+        let fresh = crate::manifest::render_manifest_schema().unwrap();
+        assert!(
+            on_disk == fresh,
+            "manifest JSON schema drifted from {}.\n\
              Regenerate with: cargo run -p gc-forge-scenario --bin gen-schema",
             path.display()
         );

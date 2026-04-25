@@ -1,10 +1,11 @@
 //! GC-Forge command-line entry point.
 //!
-//! Iteration 2 (`scenario-parser`): wires up `gc-forge lint`. Other
-//! subcommands (`run`, `validate`, `batch`, `selftest`, …) land in later
-//! iterations.
+//! Iteration 5 wires `gc-forge run`. Other subcommands (`validate`, `batch`,
+//! `selftest`, `presets`) land in later iterations.
 
 #![allow(clippy::unnecessary_wraps)]
+
+mod run;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -31,6 +32,10 @@ enum Command {
     /// Validates a scenario file (syntax + apiVersion + extends resolution),
     /// without executing it.
     Lint(LintArgs),
+
+    /// Runs a scenario through the configured runner and writes the GC log
+    /// + run manifest to disk.
+    Run(run::RunArgs),
 }
 
 #[derive(Debug, clap::Args)]
@@ -53,6 +58,17 @@ fn main() -> ExitCode {
             Err(e) => {
                 report(&e);
                 ExitCode::from(1)
+            }
+        },
+        Some(Command::Run(args)) => match run::execute(&args) {
+            Ok(()) => ExitCode::SUCCESS,
+            Err(run::RunCommandError::Scenario(e)) => {
+                report(&e);
+                ExitCode::from(1)
+            }
+            Err(other) => {
+                eprintln!("error: {other}");
+                ExitCode::from(2)
             }
         },
         None => ExitCode::SUCCESS, // bare `gc-forge` prints help via clap's default
