@@ -7,6 +7,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ### Added
 
+- R5 `cache-churn` regime on both sides:
+    - `gc-forge-regimes::CacheChurnRegime` + `CacheChurnParams` with `cache_size_mb`, `eviction_rate_per_s`, `entry_lifetime_ms`, `entry_size_kb`. All four required and rejected at `0`. Registered in `resolve()`.
+    - `dev.gcforge.harness.regimes.CacheChurnRegime` Java implementation: long-lived survivor pool with FIFO eviction at the configured rate. Registered in `RegimeRegistry`.
+- Two new presets: `presets/cache-g1-churn.yaml` (G1, 4 GiB) and `presets/cache-parallel-churn.yaml` (Parallel, 4 GiB, extends G1).
+- Integration test `cache_g1_preset_runs_and_produces_log` (gated on `docker-integration`) confirming the regime is registered and produces a G1 GC log.
+- `doc/user/regimes.md` R5 section filled.
 - R3 `humongous-pressure` regime on both sides:
     - `gc-forge-regimes::HumongousPressureRegime` + `HumongousPressureParams` with `humongous_ratio` (clamped to `(0, 1]`), `humongous_size_kb` (`auto` defaults to 2 MiB), optional `region_size_mb`, `allocation_rate_mb_s`. Registered in `resolve()`.
     - `dev.gcforge.harness.regimes.HumongousPressureRegime` Java implementation that allocates `humongous_size_kb`-KiB chunks at the configured ratio. Registered in `RegimeRegistry`.

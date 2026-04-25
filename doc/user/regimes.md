@@ -144,7 +144,42 @@ _TODO iter 10._
 
 ## R5 — `cache-churn`
 
-_TODO iter 9._
+**Available since:** iteration 9.
+
+> A workload that maintains a bounded in-memory cache: each entry lives for
+> a fixed lifetime and is then evicted, FIFO-style. The continuous mid-life
+> tenuring drives a steady promotion rate from young to old, exercising
+> mixed GCs. Used to distinguish a bounded cache pattern from a slow leak
+> (R4): both grow old gen, only the leak grows it unboundedly.
+
+### Parameters
+
+| Key                   | Type           | Default | Notes |
+|-----------------------|----------------|---------|-------|
+| `cache_size_mb`       | integer (> 0)  | `500`   | Nominal cache capacity. The harness FIFO-evicts to keep it under this size. |
+| `eviction_rate_per_s` | integer (> 0)  | `1000`  | Eviction (and insertion) rate. Drives the steady-state allocation rate. |
+| `entry_lifetime_ms`   | integer (> 0)  | `2000`  | Time-to-live of an entry. The combination of `lifetime_ms` and `eviction_rate_per_s` determines the live-set; if the entries don't all fit, FIFO eviction holds the size below `cache_size_mb`. |
+| `entry_size_kb`       | integer (> 0)  | `8`     | Size of each cache entry. |
+
+### Expected signature
+
+- Promotion rate (young → old) ≥ 30 % of young throughput.
+- Old gen oscillates between `cache_size × 0.8` and `cache_size × 1.2`.
+- Mixed GCs are frequent but regular (not pathological).
+
+### Phenomena exhibited
+
+- `promotion_pressure`.
+
+### Use cases
+
+- Differentiating a bounded cache footprint from a slow leak (R4).
+- Stressing G1's mixed-GC pacing under sustained promotion.
+
+### Shipped baselines
+
+- `presets/cache-g1-churn.yaml` — G1, 4 GiB heap, 5 min, default R5 params.
+- `presets/cache-parallel-churn.yaml` — extends the G1 preset, swaps to Parallel.
 
 ## R6 — `mixed-gc-pathological`
 
