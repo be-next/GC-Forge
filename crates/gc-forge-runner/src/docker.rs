@@ -267,9 +267,15 @@ impl Runner for DockerRunner {
 }
 
 fn host_work_dir(log_path: &Path) -> PathBuf {
-    log_path
+    let parent = log_path
         .parent()
-        .map_or_else(|| PathBuf::from("."), Path::to_path_buf)
+        .filter(|p| !p.as_os_str().is_empty())
+        .map_or_else(|| PathBuf::from("."), Path::to_path_buf);
+    // Docker rejects relative paths in `-v <host>:<container>` ("includes
+    // invalid characters for a local volume name") and treats them as
+    // named volumes. Normalise to absolute without touching the filesystem
+    // so the bind mount is unambiguous regardless of the user's CWD.
+    std::path::absolute(&parent).unwrap_or(parent)
 }
 
 fn log_path_in_container(log_path: &Path) -> PathBuf {
@@ -434,9 +440,19 @@ spec:
     }
 
     #[test]
-    fn host_work_dir_falls_back_to_dot() {
+    fn host_work_dir_returns_absolute_path() {
+        // Bare filename → CWD.
         let p = host_work_dir(Path::new("gc.log"));
-        assert_eq!(p, PathBuf::from(""));
+        assert!(p.is_absolute(), "expected absolute, got {p:?}");
+
+        // Relative parent → CWD/parent.
+        let p = host_work_dir(Path::new("out/demo/gc.log"));
+        assert!(p.is_absolute(), "expected absolute, got {p:?}");
+        assert!(p.ends_with("out/demo"), "got {p:?}");
+
+        // Already absolute → preserved verbatim.
+        let p = host_work_dir(Path::new("/tmp/logs/gc.log"));
+        assert_eq!(p, PathBuf::from("/tmp/logs"));
     }
 
     #[test]
