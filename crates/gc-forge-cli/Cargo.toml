@@ -25,6 +25,7 @@ tracing-subscriber = { workspace = true }
 chrono      = { workspace = true }
 uuid        = { workspace = true }
 serde_yaml  = { workspace = true }
+serde_json  = { workspace = true }
 gc-forge-scenario = { workspace = true }
 gc-forge-regimes  = { workspace = true }
 gc-forge-runner   = { workspace = true }

@@ -5,6 +5,88 @@ Maintained by the Teamlead role. See `doc/process/orchestration.md` for the proc
 
 ---
 
+## Iteration 13 — validate-cmd
+
+- **Started:** 2026-04-25
+- **Status:** merged
+- **Branch:** `iter/13-validate-cmd` (merged into `main`)
+- **Goal:** GC log parser + invariant evaluator in `gc-forge-validate`, plus the `gc-forge validate <log> --manifest <manifest.yaml>` subcommand. After this iteration, every preset's `expected_invariants` becomes machine-checkable. Refs: SPEC-FONCTIONNELLE §6.2 (validation block), §7.1 (rules-as-code), SPEC-TECHNIQUE §4.6.
+
+### Roles (this iteration)
+
+| Role | Agent | Note |
+|------|-------|------|
+| Teamlead   | A6 | was Coder in iter 12 |
+| Coder      | A1 | was Reviewer in iter 12 |
+| Reviewer   | A2 | was Tester-unit in iter 12 |
+| Tester-unit | A3 | was Tester-func in iter 12 |
+| Tester-func | A4 | was Doc-writer in iter 12 |
+| Doc-writer | A5 | was Teamlead in iter 12 |
+
+Rotation rule satisfied.
+
+### Plan
+
+1. **GC log parser** in `gc-forge-validate`: scan a Temurin 21 unified-log file line-by-line, extract `GcEvent` records with kind (young/mixed/full/concurrent), timestamp, pause duration in ms, before/after heap size where present. Detect humongous markers and evacuation-failure markers as flags on the log.
+2. **Invariant evaluator**: `Invariant::evaluate(rule_str, parsed) -> ValidationResult`. Recognised rule shapes:
+    - `young_count >= N`, `young_count <= N`, `young_count == N`
+    - `mixed_count >= N`, `mixed_count <= N`, `mixed_count == N`
+    - `full_count >= N`, `full_count <= N`, `full_count == N`
+    - `concurrent_cycle_count >= N`
+    - `young_ratio >= F` (float in `[0, 1]`)
+    - `pXX_pause_ms < N` for `XX in {50, 90, 95, 99}`
+    - `mean_pause_ms < N`
+    - `humongous_regions_in_log` (boolean check)
+    - `evacuation_failure_count >= N`, `... == 0`
+    Unknown shapes skip with a `Skipped` status (not a failure) so future
+    iterations can teach the validator new rules without breaking older
+    manifests.
+3. **CLI** `gc-forge validate <log> [--manifest M] [--update-manifest]`:
+   reads the manifest's `expected_invariants`, evaluates each against the
+   parsed log, emits a console summary, and writes the populated
+   `validation` block back into the manifest when `--update-manifest` is set.
+4. Tests: parser fixtures (5–10 hand-crafted log snippets), invariant
+   evaluator unit tests on synthetic `ParsedLog` instances, end-to-end
+   integration test that runs the steady-g1-baseline preset and validates
+   the produced log.
+
+### Decisions log
+
+- **Parser stays in `gc-forge-validate`** rather than `gc-forge-scenario`. The scenario crate is the YAML/manifest typed model; mixing log parsing into it would be domain pollution. Future shared-with-Insight extraction can move it to a `gc-core` crate (TECH §2.2) without touching the scenario types.
+- **Floating-point rule values use the YAML threshold**, not the rule-string suffix. Rule strings keep human-readable shapes (`p99_pause_ms < 50`); the threshold YAML carries the comparison value. Numeric extraction from the rule string is fragile and was avoided in earlier iterations on purpose.
+- **`Skipped` status for unrecognised rules** rather than `Failed`. Treating "we don't know how to check this yet" as failure would penalise users who write custom invariants the MVP doesn't recognise. The `validation_summary` exit code distinguishes "all checked rules passed" from "all rules either passed or are recognised by future iterations" — both yield a clean exit; only an actively-failing rule yields a non-zero exit.
+- **`--update-manifest` is opt-in**: by default, the validator prints the report on stdout and leaves the manifest unchanged. CI nightly will pass `--update-manifest` to persist the validation outcome alongside the log.
+
+### Metrics (at merge)
+
+- Rust unit tests: 178/178 (28 new in `gc-forge-validate`).
+- Java unit tests: 61/61 (unchanged — validate is Rust-only).
+- End-to-end smoke (manual): `gc-forge run steady-g1-baseline + gc-forge validate` → 3/4 rules pass, 1 skipped (`variance_pause_count_pct < 5`, not yet recognised), exit 0.
+- `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`: clean.
+- `mvn verify`: green.
+- DoD-gate (phase 1): green.
+
+### Decisions taken in flight
+
+- **Bug from iter 5 surfaced and fixed**: `gc-forge run` was building the manifest's `expected_invariants` from the regime's threshold-less rule list, dropping the scenario's `expected.invariants` thresholds. Iter 13's validator made this immediately visible (every rule was `Skipped` because the threshold was `null`). Fixed `build_manifest` to prefer `scenario.spec.expected.invariants` when present and fall back to the regime list otherwise. CHANGELOG carries a "Fixed" entry.
+- **`Skipped`-by-default for unrecognised rules** (vs `Failed`) keeps preset authors free to write invariants the validator doesn't yet know how to check. Iter 15's selftest will tighten this contract for the 14 MVP presets specifically.
+- **Float comparison helper centralised in `Op::check_float`**: `1e-9` epsilon for `==` keeps the rule grammar consistent across integer and float metrics. Strict comparators (`<`, `>`) use direct comparisons since the threshold is operator-driven.
+- **`Default::default()` field reassignment lint**: bumped into clippy's `field_reassign_with_default` four times across this iteration's tests; the struct-update pattern (`ParsedLog { humongous_seen: true, ..Default::default() }`) is cleaner and gets used throughout.
+
+### Bilan
+
+The validator is the iteration that turns the manifest from "self-describing run record" into "machine-checkable contract". Every preset's `expected_invariants` block was already there since iter 5; iter 13 makes it actionable.
+
+The parser is intentionally tolerant: lines that don't match a recognised shape are silently skipped, and unknown invariant rules return `Skipped` rather than `Failed`. This preserves manifests' forward compatibility — a 0.1.0 manifest produced by iter 13 will still validate cleanly when iter 15 teaches the validator new metrics like `variance_pause_count_pct`. The selftest in iter 15 is where these "skipped today, checked tomorrow" rules tighten into hard pass/fail.
+
+The end-to-end smoke (3/4 rules pass on a 12-second steady-state run) confirms the full pipeline works:
+- `gc-forge run` writes a manifest with the scenario's typed invariants and thresholds.
+- `gc-forge validate` reads the manifest, parses the log, evaluates each rule, prints a per-rule report, and either fails fast (exit 3 on rule violation) or stays silent (exit 0).
+
+Iteration 14 (`batch-cmd`) follows next: matrix runner that produces a corpus of N runs from a single matrix YAML.
+
+---
+
 ## Iteration 12 — regime-microservice
 
 - **Started:** 2026-04-25

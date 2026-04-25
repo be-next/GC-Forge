@@ -6,6 +6,7 @@
 #![allow(clippy::unnecessary_wraps)]
 
 mod run;
+mod validate;
 
 use std::path::PathBuf;
 use std::process::ExitCode;
@@ -36,6 +37,9 @@ enum Command {
     /// Runs a scenario through the configured runner and writes the GC log
     /// + run manifest to disk.
     Run(run::RunArgs),
+
+    /// Re-checks a GC log against the manifest's expected invariants.
+    Validate(validate::ValidateArgs),
 }
 
 #[derive(Debug, clap::Args)]
@@ -63,6 +67,17 @@ fn main() -> ExitCode {
         Some(Command::Run(args)) => match run::execute(&args) {
             Ok(()) => ExitCode::SUCCESS,
             Err(run::RunCommandError::Scenario(e)) => {
+                report(&e);
+                ExitCode::from(1)
+            }
+            Err(other) => {
+                eprintln!("error: {other}");
+                ExitCode::from(2)
+            }
+        },
+        Some(Command::Validate(args)) => match validate::execute(&args) {
+            Ok(code) => ExitCode::from(code),
+            Err(validate::ValidateError::Scenario(e)) => {
                 report(&e);
                 ExitCode::from(1)
             }

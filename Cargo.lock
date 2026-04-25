@@ -264,6 +264,7 @@ dependencies = [
  "gc-forge-runner",
  "gc-forge-scenario",
  "gc-forge-validate",
+ "serde_json",
  "serde_yaml",
  "tempfile",
  "thiserror",
@@ -320,8 +321,11 @@ name = "gc-forge-validate"
 version = "0.0.1-dev"
 dependencies = [
  "anyhow",
+ "chrono",
  "gc-forge-regimes",
  "gc-forge-scenario",
+ "serde",
+ "serde_yaml",
  "thiserror",
 ]
 

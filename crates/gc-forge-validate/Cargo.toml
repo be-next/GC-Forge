@@ -11,8 +11,11 @@ homepage.workspace = true
 readme.workspace = true
 
 [dependencies]
-anyhow    = { workspace = true }
-thiserror = { workspace = true }
+anyhow     = { workspace = true }
+chrono     = { workspace = true }
+serde      = { workspace = true }
+serde_yaml = { workspace = true }
+thiserror  = { workspace = true }
 gc-forge-scenario = { workspace = true }
 gc-forge-regimes  = { workspace = true }
 

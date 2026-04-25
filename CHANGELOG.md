@@ -7,6 +7,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ### Added
 
+- `gc-forge-validate`: GC log parser (`parse_log`, `ParsedLog`, `GcEvent`, `GcEventKind`) tuned for Temurin 21 unified logs. Tolerant line-by-line scan that surfaces young/mixed/full/concurrent events, pause durations, before/after heap sizes, plus humongous, evacuation-failure, OOM markers.
+- `gc-forge-validate::evaluate` and `validate_invariants` — rule evaluator over the parsed log. Recognised rule shapes: count comparators on young/mixed/full/concurrent_cycle/evacuation_failure, ratio thresholds (`young_ratio`), pause percentile / mean thresholds, and boolean rules (`humongous_regions_in_log`, `no_evacuation_failure`, `oom_seen`). Unknown rules return `Skipped` for backward compatibility.
+- `gc-forge validate <log> --manifest <path>` subcommand: prints a per-rule report, exits 3 on any failure (per SPEC §10.1), and optionally persists the result back into the manifest with `--update-manifest`.
+- `doc/user/cli-reference.md` — `validate` section documented with the rule grammar.
+
+### Fixed
+
+- `gc-forge run` now copies the scenario's `spec.expected.invariants` into the manifest's `expected_invariants` (with their thresholds) instead of falling back to the regime's threshold-less rule list. Iter 13's validator uncovered this: previously every threshold landed as `null`, so every check was skipped.
+
 - R7 `microservice-stop-and-go` regime on both sides — **closes the MVP regime catalogue at 7/7**:
     - `gc-forge-regimes::MicroserviceStopGoRegime` + `MicroserviceStopGoParams` with `active_period_s`, `idle_period_s`, `active_rate_mb_s`, `cycles` (`auto` or fixed). Registered in `resolve()`.
     - `dev.gcforge.harness.regimes.MicroserviceStopGoRegime` Java implementation: alternates active allocation phases with pure-sleep idle phases.

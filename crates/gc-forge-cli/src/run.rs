@@ -270,13 +270,34 @@ fn build_manifest(
     let log_for_jvm_flags = log_path_in_container(&outcome.log_path);
     let jvm_flags = build_jvm_command(scenario, &log_for_jvm_flags);
 
-    let invariants = invariant_rules
-        .into_iter()
-        .map(|rule| ExpectedInvariantRecord {
-            rule: rule.to_owned(),
-            threshold: serde_yaml::Value::Null,
+    // Prefer the scenario's `expected.invariants` (which carry thresholds)
+    // and fall back to the regime's static rule list when the scenario
+    // doesn't declare them.
+    let scenario_invariants: Vec<ExpectedInvariantRecord> = scenario
+        .spec
+        .expected
+        .as_ref()
+        .map(|e| {
+            e.invariants
+                .iter()
+                .map(|inv| ExpectedInvariantRecord {
+                    rule: inv.rule.clone(),
+                    threshold: inv.threshold.clone(),
+                })
+                .collect()
         })
-        .collect();
+        .unwrap_or_default();
+    let invariants = if scenario_invariants.is_empty() {
+        invariant_rules
+            .into_iter()
+            .map(|rule| ExpectedInvariantRecord {
+                rule: rule.to_owned(),
+                threshold: serde_yaml::Value::Null,
+            })
+            .collect()
+    } else {
+        scenario_invariants
+    };
 
     let manifest = RunManifest::new(
         RunMeta {

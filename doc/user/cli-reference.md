@@ -91,7 +91,47 @@ pass the path to the YAML in `presets/`.
 
 ## `gc-forge validate`
 
-_TODO iter 13._
+```
+gc-forge validate <LOG> --manifest <PATH> [--update-manifest] [--manifest-format yaml|json]
+```
+
+Re-checks a GC log against the manifest's `expected_invariants`. Each rule
+is evaluated against the parsed log and reported as passed, failed, or
+skipped (the latter for rules the validator does not yet recognise).
+
+| Flag                      | Effect                                                                |
+|---------------------------|-----------------------------------------------------------------------|
+| `--manifest <PATH>`       | Run manifest carrying `expected_invariants`. Required.                |
+| `--update-manifest`       | Persist the validation result back into the manifest's `validation` block. |
+| `--manifest-format <FMT>` | Format on write (only used with `--update-manifest`). `yaml` (default) or `json`. |
+
+**Recognised rule shapes** (iter 13):
+
+| Metric                          | Comparators              | Notes                                        |
+|---------------------------------|--------------------------|----------------------------------------------|
+| `young_count`                   | `<`, `<=`, `>`, `>=`, `==` | Number of `Pause Young` events.            |
+| `mixed_count`                   | same                     | Number of mixed-style pauses.                |
+| `full_count`                    | same                     | Number of `Pause Full` events.               |
+| `concurrent_cycle_count`        | same                     | Number of concurrent markers.                |
+| `evacuation_failure_count`      | same                     | Number of evacuation-failure lines.          |
+| `young_ratio`                   | `<`, `<=`, `>`, `>=`     | `young_count / total_count`.                 |
+| `mean_pause_ms`                 | `<`, `<=`, `>`, `>=`     | Arithmetic mean of pause durations.          |
+| `p50_pause_ms` … `p99_pause_ms` | `<`, `<=`, `>`, `>=`     | Percentiles of pause durations.              |
+| `humongous_regions_in_log`      | (boolean)                | True when any humongous marker is observed.  |
+| `no_evacuation_failure`         | (boolean)                | True when zero evacuation-failure lines.     |
+| `oom_seen`                      | (boolean)                | True when an `OutOfMemoryError` was logged.  |
+
+Unknown rules are skipped with a clear note; they do **not** fail the run.
+This makes future invariant additions backward-compatible with older
+manifests.
+
+### Exit codes
+
+| Code | Meaning                                                          |
+|------|------------------------------------------------------------------|
+| 0    | All recognised rules passed (or every rule was skipped).         |
+| 1    | I/O or manifest parse error.                                     |
+| 3    | At least one rule failed (matches SPEC §10.1's invariant code).  |
 
 ## `gc-forge batch`
 
