@@ -7,6 +7,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ### Added
 
+- R4 `slow-leak` regime on both sides:
+    - `gc-forge-regimes::SlowLeakRegime` + `SlowLeakParams` with `leak_rate_mb_s` (`f64`, must be `> 0` and finite) and `live_set_initial_mb` (`u32`, ≥ 0). Registered in `resolve()`.
+    - `dev.gcforge.harness.regimes.SlowLeakRegime` Java implementation. Pre-allocates the initial live-set, then bumps a never-evicted reference list at the configured leak rate. Registered in `RegimeRegistry`.
+- Two new presets: `presets/leak-g1-slow.yaml` (G1, 1 GiB) and `presets/leak-zgc-slow.yaml` (ZGC, 1 GiB, extends G1).
+- Integration test `leak_g1_preset_runs_through_pipeline` (gated on `docker-integration`) confirming the pipeline emits a G1 GC log for the leak preset on a short window.
+- `doc/user/regimes.md` R4 section filled.
 - R5 `cache-churn` regime on both sides:
     - `gc-forge-regimes::CacheChurnRegime` + `CacheChurnParams` with `cache_size_mb`, `eviction_rate_per_s`, `entry_lifetime_ms`, `entry_size_kb`. All four required and rejected at `0`. Registered in `resolve()`.
     - `dev.gcforge.harness.regimes.CacheChurnRegime` Java implementation: long-lived survivor pool with FIFO eviction at the configured rate. Registered in `RegimeRegistry`.

@@ -5,6 +5,65 @@ Maintained by the Teamlead role. See `doc/process/orchestration.md` for the proc
 
 ---
 
+## Iteration 10 — regime-slow-leak
+
+- **Started:** 2026-04-25
+- **Status:** merged
+- **Branch:** `iter/10-regime-slow-leak` (merged into `main`)
+- **Goal:** add R4 (`slow-leak`) on both sides, plus the two SPEC §8 presets `leak-g1-slow` and `leak-zgc-slow`. Refs: SPEC-FONCTIONNELLE §4.4.
+
+### Roles (this iteration)
+
+| Role | Agent | Note |
+|------|-------|------|
+| Teamlead   | A3 | was Coder in iter 9 |
+| Coder      | A4 | was Reviewer in iter 9 |
+| Reviewer   | A5 | was Tester-unit in iter 9 |
+| Tester-unit | A6 | was Tester-func in iter 9 |
+| Tester-func | A1 | was Doc-writer in iter 9 |
+| Doc-writer | A2 | was Teamlead in iter 9 |
+
+Rotation rule satisfied.
+
+### Plan
+
+1. Java `SlowLeakRegime` — keeps growing a never-evicted reference list at `leak_rate_mb_s` MiB/s, starting from a baseline `live_set_initial_mb`. The live-set after-GC therefore climbs linearly until the heap can no longer accommodate it, which yields full GCs and eventually OOM (or the duration hits first).
+2. Rust `SlowLeakRegime` + `SlowLeakParams` typed view + `resolve()` registration. Float type for `leak_rate_mb_s` (the SPEC default 0.5 MiB/s isn't an integer).
+3. Two presets: `leak-g1-slow` (G1, 1 GiB heap, 10 min) and `leak-zgc-slow` (ZGC, 1 GiB heap, 10 min, extends G1 preset and overrides `gc.algorithm`).
+4. Tests both sides; integration test that runs `leak-g1-slow` for 12 s and asserts the live-set growth pattern is detectable in the GC log.
+
+### Decisions log
+
+- **`leak_rate_mb_s` is a float** (R5's parameters are integers; R4's spec default `0.5` mandates float). The Rust parser accepts both `f64` and `String` carriers; the harness CLI sends the value as a base-10 decimal string and Java parses it with `Double.parseDouble`.
+- **No OOM catching in Java**. If the leak fills the heap, the JVM throws `OutOfMemoryError` and the process exits non-zero — that's exactly the spec's `oom` exit status (manifest `exit_status.kind: oom` if Docker reports exit 137, else `failure(1)`). The `expected_phenomena` includes `slow_leak` and either `full_gc` or `oom` depending on the preset's heap size + duration combination.
+- **Integration test cap**: 12-second `leak-g1-slow` at 0.5 MiB/s adds only ~6 MiB total (well below the 1 GiB heap) — no full-GC will fire. The test asserts only that the regime ran and the log has at least the G1 init banner. The selftest matrix in iter 15 will run the full 10 minutes and check the leak signature.
+
+### Metrics (at merge)
+
+- Rust unit tests: 133/133 (8 new in `slow_leak`).
+- Java unit tests: 46/46 (6 new in `SlowLeakRegimeTest`).
+- Docker integration tests (CLI, gated): 7/7 — added `leak_g1_preset_runs_through_pipeline`.
+- `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`: clean.
+- `mvn verify`: green.
+- DoD-gate (phase 1): green.
+
+### Decisions taken in flight
+
+- **Float `leak_rate_mb_s`** (Rust f64, Java double): the SPEC default `0.5` mandates float, and rejecting non-finite (`inf`, `NaN`) avoids workload-harness pauses-of-zero edge cases. Validation accepts any positive finite value.
+- **Pre-allocate `live_set_initial_mb` upfront** rather than ramping up gradually: keeps the leak pattern clean (the leak rate is *the* slope of the after-GC footprint, not entangled with a baseline ramp). 64 KiB chunks throughout.
+- **Integration test override** for `live_set_initial_mb=10`: 10 MiB of pre-allocation fits comfortably in any heap and keeps the smoke test fast. The full SPEC behaviour (with 200 MiB initial + 10 minutes) is the iter-15 selftest's job.
+- **No new error variants**: `RegimeError` already covers everything we needed (`UnknownParameter`, `WrongType`, `OutOfRange`).
+
+### Bilan
+
+R4 lands cleanly. The catalogue is now 5/7 — only R6 (`mixed-gc-pathological`) and R7 (`microservice-stop-and-go`) remain. The slow-leak vs cache-churn pair is also now contrastable: both grow old-gen, only the leak grows it unboundedly. That contrast is exactly the kind of discrimination GC-Insight will exercise.
+
+The float-parameter case (R4 is the first regime with a non-integer parameter) was uneventful — the `Value::Number::as_f64()` path covered it without any new shape in the YAML model. R6 will reuse the same f64 helper for `fragmentation_factor`.
+
+Iteration 11 (`regime-mixed-patho`, R6) follows next.
+
+---
+
 ## Iteration 9 — regime-cache-churn
 
 - **Started:** 2026-04-25

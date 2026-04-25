@@ -8,12 +8,14 @@ pub mod allocation_burst;
 pub mod cache_churn;
 pub mod humongous_pressure;
 pub mod regime;
+pub mod slow_leak;
 pub mod steady_state;
 
 pub use allocation_burst::{AllocationBurstParams, AllocationBurstRegime, BurstsCount};
 pub use cache_churn::{CacheChurnParams, CacheChurnRegime};
 pub use humongous_pressure::{HumongousPressureParams, HumongousPressureRegime, HumongousSize};
 pub use regime::{resolve, Regime, RegimeError};
+pub use slow_leak::{SlowLeakParams, SlowLeakRegime};
 pub use steady_state::{
     LifetimeDistribution, ObjectSizeDistribution, SteadyStateParams, SteadyStateRegime,
 };

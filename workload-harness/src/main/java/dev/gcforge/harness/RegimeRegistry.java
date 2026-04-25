@@ -3,6 +3,7 @@ package dev.gcforge.harness;
 import dev.gcforge.harness.regimes.AllocationBurstRegime;
 import dev.gcforge.harness.regimes.CacheChurnRegime;
 import dev.gcforge.harness.regimes.HumongousPressureRegime;
+import dev.gcforge.harness.regimes.SlowLeakRegime;
 import dev.gcforge.harness.regimes.SteadyStateRegime;
 
 import java.util.LinkedHashMap;
@@ -27,7 +28,8 @@ public final class RegimeRegistry {
         register("allocation-burst", AllocationBurstRegime::new);
         register("humongous-pressure", HumongousPressureRegime::new);
         register("cache-churn", CacheChurnRegime::new);
-        // Future regimes (slow-leak, mixed-gc-pathological, microservice-stop-and-go)
+        register("slow-leak", SlowLeakRegime::new);
+        // Future regimes (mixed-gc-pathological, microservice-stop-and-go)
         // register here alongside their iteration's class additions.
     }
 

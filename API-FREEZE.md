@@ -1,10 +1,10 @@
-# API freeze — iteration 9 (regime-cache-churn, R5)
+# API freeze — iteration 10 (regime-slow-leak, R4)
 
 Gate 1 artifact. Overwritten at every iteration before parallel work starts.
 
 ## Scope
 
-R5 (`cache-churn`) lands. Same template as previous regimes.
+R4 (`slow-leak`) lands. Same template as previous regimes.
 
 ## Public Rust surface added
 
@@ -12,49 +12,48 @@ R5 (`cache-churn`) lands. Same template as previous regimes.
 
 | Item | Kind | Notes |
 |------|------|-------|
-| `CacheChurnRegime`            | struct | implements `Regime` for R5 |
-| `CacheChurnParams`            | struct | typed view of R5 parameters |
-| `CacheChurnParams::from_yaml` | fn     | parses with defaults, rejects unknown keys |
+| `SlowLeakRegime`            | struct | implements `Regime` for R4 |
+| `SlowLeakParams`            | struct | typed view of R4 parameters |
+| `SlowLeakParams::from_yaml` | fn     | parses with defaults, rejects unknown keys |
 
-`resolve(&RegimeSpec)` now also returns `CacheChurnRegime` for
-`kind: "cache-churn"`.
+`resolve(&RegimeSpec)` now also returns `SlowLeakRegime` for `kind: "slow-leak"`.
 
 ## Public Java surface added
 
 | Item | Kind | Notes |
 |------|------|-------|
-| `dev.gcforge.harness.regimes.CacheChurnRegime` | class | `id() = "cache-churn"`, registered. |
+| `dev.gcforge.harness.regimes.SlowLeakRegime` | class | `id() = "slow-leak"`, registered. |
 
 ## YAML schema changes
 
 None at the typed level. Two new presets ship under `presets/`:
 
-- `presets/cache-g1-churn.yaml` — G1, 4 GiB heap, 5 min, default R5 params.
-- `presets/cache-parallel-churn.yaml` — extends G1 preset, swaps to Parallel.
+- `presets/leak-g1-slow.yaml` — G1, 1 GiB heap, 10 min, default R4 params.
+- `presets/leak-zgc-slow.yaml` — extends G1 preset, swaps to ZGC.
 
 ## Invariants for Tester-unit
 
 Rust:
-- `CacheChurnParams::from_yaml(Value::Null)` returns the documented defaults.
+- `SlowLeakParams::from_yaml(Value::Null)` returns the documented defaults
+  (`leak_rate_mb_s=0.5`, `live_set_initial_mb=200`).
 - Unknown keys → `RegimeError::UnknownParameter`.
-- Zero `cache_size_mb`, zero `eviction_rate_per_s`, zero `entry_lifetime_ms`,
-  zero `entry_size_kb` all rejected with `RegimeError::OutOfRange`.
-- `workload_args` emits the regime kind, ISO duration, hex seed, and the four
+- `leak_rate_mb_s` rejects values ≤ 0; `live_set_initial_mb` rejects 0.
+- Rust accepts `leak_rate_mb_s` as both float YAML scalar (`0.5`) and string
+  (`"0.5"`).
+- `workload_args` emits the regime kind, ISO duration, hex seed, and the two
   `key=value` parameters.
-- `resolve` on `kind: "cache-churn"` returns the regime.
+- `resolve` on `kind: "slow-leak"` returns the regime.
 
 Java:
-- `CacheChurnRegime` runs to completion on the defaults within a 5 s budget
-  for short windows (≤ 1 s).
-- Unknown keys / non-positive integers are rejected at run time.
+- `SlowLeakRegime` runs to completion within a 5 s budget for short windows.
+- Unknown keys / non-positive values are rejected at run time.
 
 ## Doc sections to author (Doc-writer)
 
-- `doc/user/regimes.md` — fill the R5 section.
-- `CHANGELOG.md` — Unreleased: R5 regime, two presets, integration test
-  extension.
+- `doc/user/regimes.md` — fill the R4 section.
+- `CHANGELOG.md` — Unreleased: R4 regime, two presets, integration test.
 
 ## Approval
 
-- Coder: A3 — frozen 2026-04-25
-- Reviewer: A4 — `Approved: A4 2026-04-25` (read against SPEC-FONCTIONNELLE §4.5; survivor-pool-as-FIFO simplification noted; integration test marker is a proxy and acceptable.)
+- Coder: A4 — frozen 2026-04-25
+- Reviewer: A5 — `Approved: A5 2026-04-25` (read against SPEC-FONCTIONNELLE §4.4; float `leak_rate_mb_s` and OOM-as-exit-status approach OK).

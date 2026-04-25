@@ -9,6 +9,7 @@ use gc_forge_scenario::{RegimeSpec, Scenario};
 use crate::allocation_burst::AllocationBurstRegime;
 use crate::cache_churn::CacheChurnRegime;
 use crate::humongous_pressure::HumongousPressureRegime;
+use crate::slow_leak::SlowLeakRegime;
 use crate::steady_state::SteadyStateRegime;
 
 /// One of the seven MVP regimes (R1..R7). The trait is intentionally
@@ -80,6 +81,7 @@ pub fn resolve(spec: &RegimeSpec) -> Result<Box<dyn Regime>, RegimeError> {
         "allocation-burst" => Ok(Box::new(AllocationBurstRegime)),
         "humongous-pressure" => Ok(Box::new(HumongousPressureRegime)),
         "cache-churn" => Ok(Box::new(CacheChurnRegime)),
+        "slow-leak" => Ok(Box::new(SlowLeakRegime)),
         other => Err(RegimeError::UnknownKind(other.to_owned())),
     }
 }

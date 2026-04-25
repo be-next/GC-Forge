@@ -1,0 +1,45 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+metadata:
+  name: leak-g1-slow
+  version: 1.0.0
+  description: |
+    R4 — slow-leak on G1. Live-set baseline of 200 MiB plus 0.5 MiB/s
+    of unbounded growth on a 1 GiB heap. Over 10 minutes, the
+    after-GC live-set climbs ~300 MiB above baseline, mixed GCs become
+    more frequent, and full GC (or OOM) fires near the end as the heap
+    tightens.
+  tags: [mvp, leak, g1, slow]
+  authors: ["GC-Forge MVP"]
+
+spec:
+  jvm:
+    vendor: temurin
+    major: 21
+
+  gc:
+    algorithm: G1
+    options:
+      heap:
+        min: 1g
+        max: 1g
+
+  regime:
+    kind: slow-leak
+    parameters:
+      leak_rate_mb_s: 0.5
+      live_set_initial_mb: 200
+
+  duration: 10m
+  warmup: 10s
+  seed: 0xC0FFEE
+
+  expected:
+    phenomena:
+      - slow_leak
+      - full_gc
+    invariants:
+      - { rule: "after_gc_live_set_grows_linearly",       threshold: true }
+      - { rule: "mixed_gc_frequency_increases_over_time", threshold: true }
+      - { rule: "full_gc_or_oom_at_end",                  threshold: true }

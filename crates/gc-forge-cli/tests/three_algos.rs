@@ -128,6 +128,36 @@ fn parallel_baseline_emits_using_parallel() {
 }
 
 #[test]
+fn leak_g1_preset_runs_through_pipeline() {
+    // R4 (slow-leak): 12-second window is too short to fill a 1 GiB heap
+    // at 0.5 MiB/s, so we only assert the pipeline produced a coherent log.
+    let root = workspace_root();
+    let preset = root.join("presets/leak-g1-slow.yaml");
+    let dir = tempdir().unwrap();
+    let status = Command::new(cli_bin())
+        .args([
+            "run",
+            preset.to_str().unwrap(),
+            "--out-dir",
+            dir.path().to_str().unwrap(),
+            "--image",
+            RUNNER_IMAGE,
+            "--embedded-harness",
+            HARNESS_IN_IMAGE,
+            "--override",
+            "spec.duration=12s",
+            "--override",
+            "spec.regime.parameters.live_set_initial_mb=10",
+        ])
+        .status()
+        .expect("failed to invoke gc-forge");
+    assert!(status.success(), "gc-forge run failed for leak-g1-slow");
+    let log = locate_log(dir.path()).expect("leak-g1 log produced");
+    let body = std::fs::read_to_string(&log).unwrap();
+    assert!(body.contains("Using G1"), "G1 marker missing");
+}
+
+#[test]
 fn cache_g1_preset_runs_and_produces_log() {
     // R5 (cache-churn): we assert the regime is registered and the
     // pipeline produces a GC log starting with the G1 init banner. Behavioural

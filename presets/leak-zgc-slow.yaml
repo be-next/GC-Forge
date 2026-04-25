@@ -1,0 +1,22 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+extends: leak-g1-slow.yaml
+
+metadata:
+  name: leak-zgc-slow
+  version: 1.0.0
+  description: |
+    R4 — slow-leak on generational ZGC. Same workload as `leak-g1-slow`,
+    on ZGC. Useful contrast: ZGC's concurrent reclamation handles the
+    leak with shorter pauses while still failing to keep up — the
+    after-GC live-set climbs at the same rate.
+  tags: [mvp, leak, zgc, slow]
+
+spec:
+  gc:
+    algorithm: ZGC
+    options:
+      heap:
+        min: 1g
+        max: 1g

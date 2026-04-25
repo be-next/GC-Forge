@@ -140,7 +140,41 @@ when the regime parameters or invariants change.
 
 ## R4 — `slow-leak`
 
-_TODO iter 10._
+**Available since:** iteration 10.
+
+> A workload whose live-set grows linearly with time: each second adds
+> `leak_rate_mb_s` MiB that never get evicted. Models a process with a
+> classic memory leak. The after-GC footprint therefore climbs steadily
+> until the heap can no longer accommodate it; mixed GCs become more
+> frequent and full GC (or OOM) eventually fires.
+
+### Parameters
+
+| Key                   | Type           | Default | Notes |
+|-----------------------|----------------|---------|-------|
+| `leak_rate_mb_s`      | float (> 0)    | `0.5`   | MiB/s of unbounded growth, on top of the baseline live-set. |
+| `live_set_initial_mb` | integer (≥ 0)  | `200`   | Resident MiB before the leak starts climbing. Pre-allocated at startup. |
+
+### Expected signature
+
+- After-GC live-set climbs with slope `≈ leak_rate_mb_s × T`.
+- Mixed-GC frequency increases over time as old-gen tightens.
+- Full GC or OOM at the end of the run.
+
+### Phenomena exhibited
+
+- `slow_leak`.
+- Optionally `full_gc` or `oom` depending on `leak_rate × duration` vs heap size.
+
+### Use cases
+
+- Demonstrating leak detection (linear regression on after-GC footprint).
+- Distinguishing the leak signature from a bounded cache (R5).
+
+### Shipped baselines
+
+- `presets/leak-g1-slow.yaml` — G1, 1 GiB heap, 10 min, default R4 params.
+- `presets/leak-zgc-slow.yaml` — extends G1 preset, swaps to ZGC. Useful contrast: ZGC's concurrent reclamation produces shorter pauses while the leak progresses at the same wall-clock rate.
 
 ## R5 — `cache-churn`
 
