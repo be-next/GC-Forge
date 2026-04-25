@@ -7,6 +7,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ### Added
 
+- R6 `mixed-gc-pathological` regime on both sides:
+    - `gc-forge-regimes::MixedGcPathologicalRegime` + `MixedGcPathologicalParams` with `old_gen_pressure` (`(0, 1]`), `fragmentation_factor` (`[1.0, 3.0]`), `survivor_age_target` (`[1, 15]`). Registered in `resolve()`.
+    - `dev.gcforge.harness.regimes.MixedGcPathologicalRegime` Java implementation: pre-fills old gen with chunks in interleaved size classes (small/medium/large), then sustains a steady allocation rate against the saturated heap. Registered in `RegimeRegistry`.
+- One new preset: `presets/mixed-pathological-g1.yaml` (G1, 2 GiB).
+- `doc/user/regimes.md` R6 section filled.
 - R4 `slow-leak` regime on both sides:
     - `gc-forge-regimes::SlowLeakRegime` + `SlowLeakParams` with `leak_rate_mb_s` (`f64`, must be `> 0` and finite) and `live_set_initial_mb` (`u32`, ≥ 0). Registered in `resolve()`.
     - `dev.gcforge.harness.regimes.SlowLeakRegime` Java implementation. Pre-allocates the initial live-set, then bumps a never-evicted reference list at the configured leak rate. Registered in `RegimeRegistry`.

@@ -1,10 +1,10 @@
-# API freeze — iteration 10 (regime-slow-leak, R4)
+# API freeze — iteration 11 (regime-mixed-pathological, R6)
 
 Gate 1 artifact. Overwritten at every iteration before parallel work starts.
 
 ## Scope
 
-R4 (`slow-leak`) lands. Same template as previous regimes.
+R6 (`mixed-gc-pathological`) lands. Same template as previous regimes.
 
 ## Public Rust surface added
 
@@ -12,48 +12,49 @@ R4 (`slow-leak`) lands. Same template as previous regimes.
 
 | Item | Kind | Notes |
 |------|------|-------|
-| `SlowLeakRegime`            | struct | implements `Regime` for R4 |
-| `SlowLeakParams`            | struct | typed view of R4 parameters |
-| `SlowLeakParams::from_yaml` | fn     | parses with defaults, rejects unknown keys |
+| `MixedGcPathologicalRegime`            | struct | implements `Regime` for R6 |
+| `MixedGcPathologicalParams`            | struct | typed view of R6 parameters |
+| `MixedGcPathologicalParams::from_yaml` | fn     | parses with defaults, rejects unknown keys |
 
-`resolve(&RegimeSpec)` now also returns `SlowLeakRegime` for `kind: "slow-leak"`.
+`resolve(&RegimeSpec)` now also returns `MixedGcPathologicalRegime` for
+`kind: "mixed-gc-pathological"`.
 
 ## Public Java surface added
 
 | Item | Kind | Notes |
 |------|------|-------|
-| `dev.gcforge.harness.regimes.SlowLeakRegime` | class | `id() = "slow-leak"`, registered. |
+| `dev.gcforge.harness.regimes.MixedGcPathologicalRegime` | class | `id() = "mixed-gc-pathological"`, registered. |
 
 ## YAML schema changes
 
-None at the typed level. Two new presets ship under `presets/`:
+None at the typed level. One new preset ships under `presets/`:
 
-- `presets/leak-g1-slow.yaml` — G1, 1 GiB heap, 10 min, default R4 params.
-- `presets/leak-zgc-slow.yaml` — extends G1 preset, swaps to ZGC.
+- `presets/mixed-pathological-g1.yaml` — G1, 2 GiB heap, 5 min.
 
 ## Invariants for Tester-unit
 
 Rust:
-- `SlowLeakParams::from_yaml(Value::Null)` returns the documented defaults
-  (`leak_rate_mb_s=0.5`, `live_set_initial_mb=200`).
-- Unknown keys → `RegimeError::UnknownParameter`.
-- `leak_rate_mb_s` rejects values ≤ 0; `live_set_initial_mb` rejects 0.
-- Rust accepts `leak_rate_mb_s` as both float YAML scalar (`0.5`) and string
-  (`"0.5"`).
-- `workload_args` emits the regime kind, ISO duration, hex seed, and the two
+- `MixedGcPathologicalParams::from_yaml(Value::Null)` returns the documented
+  defaults (`old_gen_pressure=0.7`, `fragmentation_factor=2.0`,
+  `survivor_age_target=15`).
+- `old_gen_pressure` rejects values outside `(0, 1]`.
+- `fragmentation_factor` rejects values outside `[1.0, 3.0]`.
+- `survivor_age_target` rejects values > 15 (the JVM hard-cap).
+- `workload_args` emits the regime kind, ISO duration, hex seed, and the three
   `key=value` parameters.
-- `resolve` on `kind: "slow-leak"` returns the regime.
+- `resolve` on `kind: "mixed-gc-pathological"` returns the regime.
 
 Java:
-- `SlowLeakRegime` runs to completion within a 5 s budget for short windows.
-- Unknown keys / non-positive values are rejected at run time.
+- `MixedGcPathologicalRegime` runs to completion within a 5 s budget for short
+  windows.
+- Unknown keys / out-of-range values rejected at run time.
 
 ## Doc sections to author (Doc-writer)
 
-- `doc/user/regimes.md` — fill the R4 section.
-- `CHANGELOG.md` — Unreleased: R4 regime, two presets, integration test.
+- `doc/user/regimes.md` — fill the R6 section.
+- `CHANGELOG.md` — Unreleased: R6 regime, one preset, integration test.
 
 ## Approval
 
-- Coder: A4 — frozen 2026-04-25
-- Reviewer: A5 — `Approved: A5 2026-04-25` (read against SPEC-FONCTIONNELLE §4.4; float `leak_rate_mb_s` and OOM-as-exit-status approach OK).
+- Coder: A5 — frozen 2026-04-25
+- Reviewer: A6 — `Approved: A6 2026-04-25` (read against SPEC-FONCTIONNELLE §4.6; heap-relative `old_gen_pressure` approximation via `Runtime.maxMemory` noted as best-effort).

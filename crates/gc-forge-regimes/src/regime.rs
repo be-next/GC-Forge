@@ -9,6 +9,7 @@ use gc_forge_scenario::{RegimeSpec, Scenario};
 use crate::allocation_burst::AllocationBurstRegime;
 use crate::cache_churn::CacheChurnRegime;
 use crate::humongous_pressure::HumongousPressureRegime;
+use crate::mixed_gc_pathological::MixedGcPathologicalRegime;
 use crate::slow_leak::SlowLeakRegime;
 use crate::steady_state::SteadyStateRegime;
 
@@ -82,6 +83,7 @@ pub fn resolve(spec: &RegimeSpec) -> Result<Box<dyn Regime>, RegimeError> {
         "humongous-pressure" => Ok(Box::new(HumongousPressureRegime)),
         "cache-churn" => Ok(Box::new(CacheChurnRegime)),
         "slow-leak" => Ok(Box::new(SlowLeakRegime)),
+        "mixed-gc-pathological" => Ok(Box::new(MixedGcPathologicalRegime)),
         other => Err(RegimeError::UnknownKind(other.to_owned())),
     }
 }

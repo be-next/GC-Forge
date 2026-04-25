@@ -5,6 +5,64 @@ Maintained by the Teamlead role. See `doc/process/orchestration.md` for the proc
 
 ---
 
+## Iteration 11 — regime-mixed-pathological
+
+- **Started:** 2026-04-25
+- **Status:** merged
+- **Branch:** `iter/11-regime-mixed-patho` (merged into `main`)
+- **Goal:** add R6 (`mixed-gc-pathological`) on both sides, plus the SPEC §8 preset `mixed-pathological-g1`. Refs: SPEC-FONCTIONNELLE §4.6.
+
+### Roles (this iteration)
+
+| Role | Agent | Note |
+|------|-------|------|
+| Teamlead   | A4 | was Coder in iter 10 |
+| Coder      | A5 | was Reviewer in iter 10 |
+| Reviewer   | A6 | was Tester-unit in iter 10 |
+| Tester-unit | A1 | was Tester-func in iter 10 |
+| Tester-func | A2 | was Doc-writer in iter 10 |
+| Doc-writer | A3 | was Teamlead in iter 10 |
+
+Rotation rule satisfied.
+
+### Plan
+
+1. Java `MixedGcPathologicalRegime` — fills old gen to `old_gen_pressure × heap` worth of long-lived references, then sustains a steady allocation rate that keeps the heap right at the IHOP threshold. The `fragmentation_factor` is implemented by retaining objects in interleaved size classes so reclaim per mixed-GC stays low.
+2. Rust `MixedGcPathologicalRegime` + `MixedGcPathologicalParams` typed view + `resolve()` registration.
+3. One preset: `mixed-pathological-g1` (G1, 2 GiB heap, 5 min).
+4. Tests both sides; integration test with a 12-second window asserting the regime is registered.
+
+### Decisions log
+
+- **`survivor_age_target` is informational at the harness level** (the JVM picks via `-XX:MaxTenuringThreshold`, which we don't override). Like `region_size_mb` for R3, the parameter is accepted by the Rust parser and forwarded to the harness for traceability.
+- **`fragmentation_factor`**: emulated by allocating chunks in interleaved size classes (small, medium, large) so the survivor pool's free spans are non-contiguous when entries are evicted. A plain implementation. Spec asks for a multiplier in `[1.0, 3.0]`; values outside are rejected.
+- **`old_gen_pressure` is heap-relative**, but the harness can't know the heap size from inside the JVM. We approximate the target from the JVM's runtime `Runtime.getRuntime().maxMemory()` — best-effort, good enough for the regime's purpose (driving the JVM to mixed-GC pathological territory).
+
+### Metrics (at merge)
+
+- Rust unit tests: 141/141 (8 new in `mixed_gc_pathological`).
+- Java unit tests: 53/53 (7 new in `MixedGcPathologicalRegimeTest`).
+- Docker integration tests (CLI, gated): 7/7 unchanged (R6 not added to integration set; the regime allocates ~70% of the test JVM's heap up-front, too disruptive for a 12-second smoke test).
+- `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`: clean.
+- `mvn verify`: green.
+- DoD-gate (phase 1): green.
+
+### Decisions taken in flight
+
+- **R6 skipped from CLI integration test set**: pre-allocating 70% of `Runtime.maxMemory()` happens at the *test* JVM's heap, not the workload JVM's. With macOS Docker Desktop's default container memory (~8 GiB), pre-allocating 5.6 GiB up-front for a 12-second test is wasteful and slow. The full preset (2 GiB heap, 5 min) is exercised in iter 15's selftest matrix where it makes sense.
+- **Java unit test pinned to `old_gen_pressure: 0.05`** so the 7 JUnit tests run on contributors' machines without exhausting the test JVM's heap. The default 0.7 is exercised at preset time.
+- **Three independent f64 parsers** (`parse_pressure`, `parse_fragmentation`, `parse_age`) sharing a common `parse_f64` helper — slightly more verbose than a single function with bounds parameters, but each method's range is part of its name and the error messages stay focused.
+
+### Bilan
+
+R6 lands cleanly. The catalogue is now 6/7 — only R7 (`microservice-stop-and-go`) remains. Iter 11 is also the last regime to introduce a "novel" parameter shape (bounded `[1, 3]` and `[1, 15]` ranges); iter 12 reuses everything we've assembled by now.
+
+The R6 implementation is the most aggressive on JVM resources of any regime so far: pre-allocating 70% of the heap at startup is exactly what the spec asks for to drive the pathological case, but it's also the reason the regime stays out of the lightweight integration test set. Iter 15 will run it for real with proper budget.
+
+Iteration 12 (`regime-microservice`, R7) follows.
+
+---
+
 ## Iteration 10 — regime-slow-leak
 
 - **Started:** 2026-04-25

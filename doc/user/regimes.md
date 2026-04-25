@@ -217,7 +217,41 @@ when the regime parameters or invariants change.
 
 ## R6 — `mixed-gc-pathological`
 
-_TODO iter 11._
+**Available since:** iteration 11.
+
+> A workload that pre-fills old gen with a fragmented long-lived pool, then
+> keeps the heap pinned to IHOP. G1 falls into a mixed-GC cycle where each
+> mixed pause is longer than the last and reclaims an ever-smaller fraction
+> of the heap — the canonical "mixed-GC pathological" signature.
+
+### Parameters
+
+| Key                    | Type           | Default | Notes |
+|------------------------|----------------|---------|-------|
+| `old_gen_pressure`     | float `(0, 1]` | `0.7`   | Fraction of the heap pre-filled with long-lived references. |
+| `fragmentation_factor` | float `[1, 3]` | `2.0`   | Multiplier on the share of the largest size class in the long-lived pool — higher values produce rougher free-lists. |
+| `survivor_age_target`  | integer `[1, 15]` | `15` | Target tenuring age. Forwarded to the harness for traceability; the JVM hard-caps at 15. |
+
+### Expected signature
+
+- Mixed-GC duration grows over the run.
+- Reclaim per mixed-GC stays below 5 % of the heap.
+- Effective IHOP descends (G1's ergonomic adjustment).
+- Possible evacuation failure → full GC at the end of the run.
+
+### Phenomena exhibited
+
+- `mixed_gc_pathological`.
+
+### Use cases
+
+- Premium pathological showcase for GC-Insight: surfacing degrading
+  mixed-GC efficiency is exactly the kind of root-cause analysis that
+  saves operators hours of guesswork.
+
+### Shipped baselines
+
+- `presets/mixed-pathological-g1.yaml` — G1, 2 GiB heap, 5 min, default R6 params.
 
 ## R7 — `microservice-stop-and-go`
 

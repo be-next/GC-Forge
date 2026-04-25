@@ -3,6 +3,7 @@ package dev.gcforge.harness;
 import dev.gcforge.harness.regimes.AllocationBurstRegime;
 import dev.gcforge.harness.regimes.CacheChurnRegime;
 import dev.gcforge.harness.regimes.HumongousPressureRegime;
+import dev.gcforge.harness.regimes.MixedGcPathologicalRegime;
 import dev.gcforge.harness.regimes.SlowLeakRegime;
 import dev.gcforge.harness.regimes.SteadyStateRegime;
 
@@ -29,8 +30,9 @@ public final class RegimeRegistry {
         register("humongous-pressure", HumongousPressureRegime::new);
         register("cache-churn", CacheChurnRegime::new);
         register("slow-leak", SlowLeakRegime::new);
-        // Future regimes (mixed-gc-pathological, microservice-stop-and-go)
-        // register here alongside their iteration's class additions.
+        register("mixed-gc-pathological", MixedGcPathologicalRegime::new);
+        // Future regime (microservice-stop-and-go) registers here alongside
+        // its iteration's class additions.
     }
 
     private RegimeRegistry() {

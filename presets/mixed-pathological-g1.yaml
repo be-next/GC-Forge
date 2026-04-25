@@ -1,0 +1,45 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+metadata:
+  name: mixed-pathological-g1
+  version: 1.0.0
+  description: |
+    R6 — mixed-gc-pathological on G1. Pre-fills 70% of the heap with a
+    fragmented long-lived pool, then sustains pressure that keeps the
+    heap pinned to IHOP. Mixed GCs become longer and reclaim less of
+    the heap as the run progresses — a premium pathological case for
+    GC-Insight to surface.
+  tags: [mvp, mixed, pathological, g1]
+  authors: ["GC-Forge MVP"]
+
+spec:
+  jvm:
+    vendor: temurin
+    major: 21
+
+  gc:
+    algorithm: G1
+    options:
+      heap:
+        min: 2g
+        max: 2g
+
+  regime:
+    kind: mixed-gc-pathological
+    parameters:
+      old_gen_pressure: 0.7
+      fragmentation_factor: 2.0
+      survivor_age_target: 15
+
+  duration: 5m
+  warmup: 10s
+  seed: 0xC0FFEE
+
+  expected:
+    phenomena:
+      - mixed_gc_pathological
+    invariants:
+      - { rule: "mixed_gc_duration_increases_over_time",  threshold: true }
+      - { rule: "mixed_gc_reclaim_pct < 5",               threshold: 5 }
+      - { rule: "ihop_effective_decreases",               threshold: true }
