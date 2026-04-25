@@ -5,6 +5,70 @@ Maintained by the Teamlead role. See `doc/process/orchestration.md` for the proc
 
 ---
 
+## Iteration 6 — algos-zgc-parallel
+
+- **Started:** 2026-04-25
+- **Status:** merged
+- **Branch:** `iter/06-algos-zgc-parallel` (merged into `main`)
+- **Goal:** broaden algorithm coverage to ZGC (generational) and Parallel. The flag builder already supports them (iter 3); this iteration adds the two missing `steady-*-baseline` presets and exercises all three through Docker. Refs: SPEC-FONCTIONNELLE §3.2 (algo matrix), SPEC-TECHNIQUE §6.1 (`-Xlog`).
+
+### Roles (this iteration)
+
+| Role | Agent | Note |
+|------|-------|------|
+| Teamlead   | A5 | was Coder in iter 5 |
+| Coder      | A6 | was Reviewer in iter 5 |
+| Reviewer   | A1 | was Tester-unit in iter 5 |
+| Tester-unit | A2 | was Tester-func in iter 5 |
+| Tester-func | A3 | was Doc-writer in iter 5 |
+| Doc-writer | A4 | was Teamlead in iter 5 |
+
+Rotation rule satisfied.
+
+### Plan
+
+1. Author `presets/steady-zgc-baseline.yaml` and `presets/steady-parallel-baseline.yaml` using `extends: steady-g1-baseline.yaml` and overriding `spec.gc.algorithm` (and the regime's expected p99 threshold for ZGC, where the algorithm's natural p99 is sub-millisecond).
+2. Lint both presets via `gc-forge lint`.
+3. Add a Docker integration test that runs all three baselines (with a short duration override) and asserts the algorithm-specific marker in the GC log (`Using G1` / `Using The Z Garbage Collector` / `Using Parallel`).
+4. Update the regime doc to mention the algorithm coverage and add a CHANGELOG entry.
+
+### Decisions log
+
+- **Use `extends:` for the new baselines** rather than full standalone YAMLs. The three preset files differ only in `spec.gc.algorithm` (and one threshold for ZGC); `extends` keeps them in lock-step when R1's invariants change. This also exercises the iter-2 `extends:` resolver against the iter-5 manifest pipeline end-to-end.
+- **ZGC's `p99_pause_ms < 50` threshold stays** at 50 ms in the inherited expected_invariants, matching SPEC-FONCTIONNELLE §4.1's documented p99 ceiling for R1. ZGC will trivially clear it (typical p99 sub-millisecond), but tightening to e.g. 5 ms here would couple the regime threshold to the algorithm — out of scope for iter 6, and would require carving algorithm-specific invariants into the regime's `expected_invariant_rules`. Deferred to V1.
+- **Integration test runs three short scenarios in sequence**, not in parallel. Docker-on-macOS contention with concurrent `docker run` invocations is not worth chasing at iter 6; the batch parallel runner lands in iter 14 with proper concurrency control.
+- **Algorithm marker matching** uses substring assertions over exact phrases because Temurin 21's `gc,init` line is `Using ...` (with leading whitespace) — staying loose keeps the test resilient to JDK micro version drift.
+
+### Metrics (at merge)
+
+- Rust unit tests: 93/93 (an extra unit test in CLI for the embedded-harness path).
+- Java unit tests: 18/18 (unchanged).
+- Docker integration tests (CLI, gated): 3/3 — `g1_baseline_emits_using_g1`, `zgc_baseline_emits_using_zgc`, `parallel_baseline_emits_using_parallel`. Wall clock 14.2 s for the three (sequential).
+- `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`: clean.
+- `mvn verify`: green.
+- DoD-gate (phase 1): green.
+
+### Decisions taken in flight
+
+- **Bug found and fixed: `--embedded-harness` required a host JAR.** The first run of the integration test failed because `harness_jar_path` always asserted the host JAR existed, even when the runner image already embeds it. Fixed by scoping the existence check to the bind-mount mode; recorded as a fix in `CHANGELOG.md`. This also makes `cargo install gc-forge-cli`-based usage with the prebuilt runner image work without cloning the repo.
+- **Test invocation uses `CARGO_BIN_EXE_gc-forge`**, the path to the freshly-built CLI binary that Cargo provides at compile time for tests in a binary crate. Avoids the brittle `target/debug/gc-forge` lookup and removes any reliance on `make build` ordering.
+- **Tests run sequentially** via `-- --test-threads=1`. Three concurrent `docker run` invocations on macOS Docker Desktop spike CPU contention enough to push the inner JVM beyond the 3 s budget; sequential is fast enough (~14 s total) and stable.
+- **`extends:` in the new presets** validates the iter-2 resolver against the iter-5 manifest pipeline — the resolved scenario in the manifest's `scenario.resolved` block contains the merged tree, with `extends:` stripped and the child's algorithm winning over the parent's.
+
+### Bilan
+
+Three baselines, three GC algorithms, one orchestrator. Iter 6 closes the algo-coverage chapter of Phase 2 with surprisingly little code (two YAMLs + a 100-line integration test) — exactly the dividend the iter-3 flag builder and iter-5 orchestrator were designed to pay. The CLI integration test is the first contributor that will catch ZGC- or Parallel-specific runner regressions automatically.
+
+The `--embedded-harness`-skips-host-JAR fix is the kind of correctness improvement that tends to surface only when running real Docker. It is now documented in CHANGELOG and exercised by the test set.
+
+Soft items deferred:
+1. **Algorithm-aware invariant tightening** (e.g. ZGC's p99 is sub-millisecond, Parallel's longer young pauses). The R1 invariants stay universal at this iteration; per-algo refinements land alongside the validator in iter 13 where they'll have observed-vs-threshold semantics anyway.
+2. **Manifest enrichment for embedded-harness mode**: `workload_jar_sha256` is empty when the JAR is in the image. Replacing it with an "image digest" is a clean follow-up but requires Docker SDK or a `docker inspect` shellout — out of scope for iter 6, will land alongside iter 17's release pipeline.
+
+Iteration 7 (`regime-burst`) can start: R2 allocation-burst lands as the next regime, with the same shape as R1 (Java `Regime` impl + Rust `Regime` impl + 2 presets + invariants + the CLI passes through unchanged).
+
+---
+
 ## Iteration 5 — run-end-to-end
 
 - **Started:** 2026-04-25

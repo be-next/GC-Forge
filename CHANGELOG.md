@@ -7,6 +7,13 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ### Added
 
+- Two new presets: `presets/steady-zgc-baseline.yaml` (generational ZGC) and `presets/steady-parallel-baseline.yaml` (Parallel collector). Both `extends: steady-g1-baseline.yaml` and override only `spec.gc.algorithm`, so R1's regime parameters and expected invariants stay in lock-step across all three MVP algorithms.
+- New CLI integration test (`crates/gc-forge-cli/tests/three_algos.rs`, gated on `docker-integration`) that runs all three baselines through `gc-forge run` and asserts the algorithm-specific marker shows up in each GC log (`Using G1` / `Using ZGC` / `Using Parallel`). Surface that the `--embedded-harness` flow does not require a host `harness.jar`.
+
+### Fixed
+
+- `gc-forge run` no longer requires the host harness JAR when `--embedded-harness` is set; the JAR check is now scoped to the bind-mount mode.
+
 - `gc-forge run <scenario.yaml>`: end-to-end orchestrator. Loads the scenario (with `extends:` resolution + `--override` substitution), resolves the regime, executes through the Docker runner, and writes the GC log plus a `gc-forge/run-manifest.v1` document to `<out-dir>/<name>-<seed>.{log,manifest.yaml}`.
 - `gc-forge-scenario::manifest`: typed model for the run manifest — `RunManifest`, `RunMeta`, `HostMeta`, `ScenarioRecord`, `JvmRecord`, `ReproducibilityRecord`, `OutputRecord`, `ExpectedInvariantRecord`, `ValidationRecord`, `ExitStatusRecord` (tagged enum). YAML and JSON output via `write_yaml` / `write_json`. SHA-256 helpers `sha256_hex` / `sha256_hex_bytes`.
 - JSON Schema for the manifest at `schemas/run-manifest-v1.json`, generated alongside the scenario schema. Both are drift-checked at every test run.

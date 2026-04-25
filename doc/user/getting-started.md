@@ -46,6 +46,11 @@ gc-forge run presets/steady-g1-baseline.yaml \
     --embedded-harness /opt/gc-forge/harness.jar
 ```
 
+The same flags work against the two sibling baselines —
+`presets/steady-zgc-baseline.yaml` (generational ZGC) and
+`presets/steady-parallel-baseline.yaml` (Parallel collector). All three share
+their regime parameters via `extends: steady-g1-baseline.yaml`.
+
 After ~90 seconds you should see two files:
 
 ```

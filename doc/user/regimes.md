@@ -44,6 +44,17 @@ Unknown keys are rejected at scenario resolution time.
 - Reference baseline for GC-Insight detectors.
 - Sanity check that a JVM build is not pathologically broken.
 
+### Shipped baselines
+
+R1 ships with one preset per MVP collector, all extending the canonical YAML:
+
+- `presets/steady-g1-baseline.yaml` — G1 (default).
+- `presets/steady-zgc-baseline.yaml` — generational ZGC.
+- `presets/steady-parallel-baseline.yaml` — Parallel.
+
+The three differ only in `spec.gc.algorithm`; `extends:` keeps them in lock-step
+when the regime parameters or invariants change.
+
 ## R2 — `allocation-burst`
 
 _TODO iter 7._
