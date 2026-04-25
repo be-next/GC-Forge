@@ -5,6 +5,7 @@
 
 #![allow(clippy::unnecessary_wraps)]
 
+mod batch;
 mod run;
 mod validate;
 
@@ -40,6 +41,9 @@ enum Command {
 
     /// Re-checks a GC log against the manifest's expected invariants.
     Validate(validate::ValidateArgs),
+
+    /// Runs every cell of a matrix and writes an index CSV.
+    Batch(batch::BatchArgs),
 }
 
 #[derive(Debug, clap::Args)]
@@ -78,6 +82,18 @@ fn main() -> ExitCode {
         Some(Command::Validate(args)) => match validate::execute(&args) {
             Ok(code) => ExitCode::from(code),
             Err(validate::ValidateError::Scenario(e)) => {
+                report(&e);
+                ExitCode::from(1)
+            }
+            Err(other) => {
+                eprintln!("error: {other}");
+                ExitCode::from(2)
+            }
+        },
+        Some(Command::Batch(args)) => match batch::execute(&args) {
+            Ok(0) => ExitCode::SUCCESS,
+            Ok(_) => ExitCode::from(2),
+            Err(batch::BatchError::Scenario(e)) => {
                 report(&e);
                 ExitCode::from(1)
             }

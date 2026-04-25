@@ -5,6 +5,66 @@ Maintained by the Teamlead role. See `doc/process/orchestration.md` for the proc
 
 ---
 
+## Iteration 14 — batch-cmd
+
+- **Started:** 2026-04-25
+- **Status:** merged
+- **Branch:** `iter/14-batch-cmd` (merged into `main`)
+- **Goal:** matrix YAML schema (`gc-forge/matrix.v1`) + `gc-forge batch <matrix.yaml>` subcommand + `out/index.csv`. Sequential execution; parallel runs deferred to V1.
+
+### Roles (this iteration)
+
+| Role | Agent | Note |
+|------|-------|------|
+| Teamlead   | A1 | was Coder in iter 13 |
+| Coder      | A2 | was Reviewer in iter 13 |
+| Reviewer   | A3 | was Tester-unit in iter 13 |
+| Tester-unit | A4 | was Tester-func in iter 13 |
+| Tester-func | A5 | was Doc-writer in iter 13 |
+| Doc-writer | A6 | was Teamlead in iter 13 |
+
+Rotation rule satisfied.
+
+### Plan
+
+1. `Matrix` typed model in `gc-forge-scenario` (alongside `Scenario` and the manifest module). Fields: `base` path, `axes` map of `<dotted.path>: [values]`, `seeds: [int]`, `filters: [{key: value, …}]`.
+2. Matrix expansion: cartesian product of axes × seeds, minus the cells matching any filter. Each cell becomes a `Vec<Override>` ready for `Scenario::apply_overrides`.
+3. `gc-forge batch <matrix.yaml> [--out-dir DIR] [--image …] [--embedded-harness …]`: for each cell, invoke the same orchestrator path as `gc-forge run` (load + override + regime + runner + manifest), then append a row to `<out-dir>/index.csv`.
+4. Tests: matrix parsing, expansion (with and without filters/seeds), index-CSV format. End-to-end: a 2-cell matrix that produces 2 logs + 2 manifests + 1 index.csv with the right rows.
+
+### Decisions log
+
+- **Sequential execution** at iter 14. The SPEC mentions `--parallel N`; getting stable concurrent Docker semantics across macOS/Linux is its own engineering effort. Iter 14 does the matrix + index plumbing; concurrency is a `--parallel` flag added later that doesn't touch the schema.
+- **Index format = CSV** for the MVP (`scenario,seed,log_path,manifest_path,exit_status,duration_actual_secs,validation_status`). Parquet support deferred to V1.1 per ROADMAP.
+- **Filters use exact-match on dotted-path keys**: a filter `{gc.algorithm: ZGC, regime.kind: humongous-pressure}` excludes cells where *both* axes have those values simultaneously. Single-axis filtering is just `{gc.algorithm: Foo}`. The shape mirrors SPEC §9.2's example.
+- **Cells abort on first failure by default**, with `--continue-on-error` to keep going. Most users want to know fast that a matrix has a busted cell; the long-running CI corpus regen wants the opposite.
+
+### Metrics (at merge)
+
+- Rust unit tests: 187/187 (7 new in `scenario::matrix`, 2 new in `cli::batch`).
+- Java unit tests: 61/61 (unchanged).
+- Manual end-to-end smoke: 2-cell matrix on `presets/steady-g1-baseline.yaml` (axes: `gc.algorithm: [G1, Parallel]`, `duration: ["8s"]`) produces 2 distinct GC logs + 2 manifests + 1 `index.csv` with header + 2 rows; both cells exit 0; sequential wall clock ~17 s.
+- `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`: clean.
+- `mvn verify`: green.
+- DoD-gate (phase 1): green.
+
+### Decisions taken in flight
+
+- **Bug found at smoke time: cell filename collisions.** Two cells of the same scenario name + seed (e.g. axis on `gc.algorithm` only) initially overwrote each other's logs (`steady-g1-baseline-c0ffee.log`). Fixed by prefixing every per-cell output with `cellN` (zero-padded against the total cell count). The `index.csv` accordingly references `cell0-…log` and `cell1-…log`. Documented in `cli-reference.md`.
+- **Matrix base-path resolution mirrors `extends:`**: relative paths resolve against the matrix file's parent directory. Smoke test caught this when `/tmp/test-matrix.yaml` resolved `presets/steady-g1-baseline.yaml` against `/tmp/`. Re-running from the repo root works as expected.
+- **`IndexMap` over `BTreeMap`** for axes: SPEC §9.2 doesn't require it, but preserving insertion order makes cell-index deterministic across runs (and across CI vs local diff). Schemars schema describes the field as a generic map, which keeps the JSON Schema readable.
+- **`build_manifest` duplicated in `batch.rs`** rather than re-exported from `run.rs`: the two paths now share the iter-13 fix (read invariants from scenario.spec.expected first). Refactoring to a shared helper is a clean follow-up but doesn't block iter 15.
+
+### Bilan
+
+`gc-forge batch` operationalises the corpus-regen pipeline. A matrix YAML expands to N cells; each cell flows through the same orchestrator the iter-5 `gc-forge run` already exercised. The end-to-end smoke confirms the index.csv format is consumable by ML/data tooling: 7 columns, one row per cell, paths relative to the host filesystem.
+
+The two off-by-spec items that surfaced during the smoke (filename collisions + base-path resolution) are exactly the kind of detail that doesn't show up in unit tests but bites the moment you actually run the binary. Both are fixed and documented; no BUGS.md entry needed because they didn't escape the iteration.
+
+Iteration 15 (`selftest-variance`) closes the validation cycle: shipping `gc-forge selftest` to run all 14 presets, `gc-forge variance-check` to measure inter-run variance, and `gc-forge presets list/show/export` to surface them.
+
+---
+
 ## Iteration 13 — validate-cmd
 
 - **Started:** 2026-04-25

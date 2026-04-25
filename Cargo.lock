@@ -306,6 +306,7 @@ name = "gc-forge-scenario"
 version = "0.0.1-dev"
 dependencies = [
  "chrono",
+ "indexmap 2.14.0",
  "schemars",
  "serde",
  "serde_json",

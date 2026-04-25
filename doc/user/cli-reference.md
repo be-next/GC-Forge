@@ -135,7 +135,48 @@ manifests.
 
 ## `gc-forge batch`
 
-_TODO iter 14._
+```
+gc-forge batch <MATRIX> [--out-dir DIR] [--image TAG] [--embedded-harness PATH]
+                        [--harness-jar PATH] [--continue-on-error]
+```
+
+Expands a matrix YAML into its cells (cartesian product of axes × seeds,
+minus filters), runs each cell sequentially through the same orchestrator
+as `gc-forge run`, and writes an `<out-dir>/index.csv` listing every cell's
+log, manifest, exit status, duration, and validation status.
+
+**Matrix YAML schema** (`gc-forge/matrix.v1`):
+
+```yaml
+apiVersion: gc-forge/matrix.v1
+kind: Matrix
+spec:
+  base: presets/steady-g1-baseline.yaml
+  axes:
+    spec.gc.algorithm: [G1, ZGC, Parallel]
+    spec.jvm.major: [17, 21]
+  seeds: [1, 2, 3]
+  filters:
+    - { spec.gc.algorithm: ZGC, spec.regime.kind: humongous-pressure }
+```
+
+Per-cell output is `<out-dir>/cellN-<scenario-name>-<seed-hex>.{log,manifest.yaml}`
+where `N` is the zero-padded cell index. Filenames stay distinct even when
+several cells share the same scenario name and seed.
+
+| Flag                       | Effect                                                 |
+|----------------------------|--------------------------------------------------------|
+| `--out-dir <DIR>`          | Where logs, manifests, and `index.csv` land. Default `out`. |
+| `--image <TAG>`            | Override the Docker image for every cell.              |
+| `--embedded-harness <PATH>`| Skip the host JAR mount when the image embeds it.      |
+| `--harness-jar <PATH>`     | Host JAR used by every cell (when not embedded).       |
+| `--continue-on-error`      | Keep going past failing cells. Default: stop on first failure. |
+
+Exit codes: `0` if all cells succeed; `2` if any cell failed.
+
+**Note:** `--parallel` is not yet wired in iter 14; cells run sequentially.
+Concurrency lands in V1 once Docker concurrency on macOS has been
+characterised.
 
 ## `gc-forge presets`, `selftest`, `variance-check`
 

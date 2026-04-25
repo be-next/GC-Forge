@@ -7,6 +7,9 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ### Added
 
+- `gc-forge-scenario::matrix` — typed model of `gc-forge/matrix.v1` (Matrix, MatrixSpec, MatrixCell). `Matrix::expand()` produces the cartesian product of axes and seeds, minus filter cells. Axis ordering is preserved via `IndexMap` so cell order is deterministic. 7 unit tests covering parsing, expansion (with/without seeds), filter exclusions, unknown api version.
+- `gc-forge batch <matrix.yaml> [--out-dir DIR] [--image TAG] …` subcommand: runs each cell sequentially through the same orchestrator as `gc-forge run`, writes per-cell logs and manifests under `<out-dir>/cellN-<name>-<seed>.{log,manifest.yaml}`, and emits an `index.csv` row per cell. Supports `--continue-on-error` for the corpus regen pipeline; exits `2` when any cell failed.
+- `doc/user/cli-reference.md` — `batch` section documents the matrix schema, axis/filter semantics, per-cell output filename convention, and exit codes.
 - `gc-forge-validate`: GC log parser (`parse_log`, `ParsedLog`, `GcEvent`, `GcEventKind`) tuned for Temurin 21 unified logs. Tolerant line-by-line scan that surfaces young/mixed/full/concurrent events, pause durations, before/after heap sizes, plus humongous, evacuation-failure, OOM markers.
 - `gc-forge-validate::evaluate` and `validate_invariants` — rule evaluator over the parsed log. Recognised rule shapes: count comparators on young/mixed/full/concurrent_cycle/evacuation_failure, ratio thresholds (`young_ratio`), pause percentile / mean thresholds, and boolean rules (`humongous_regions_in_log`, `no_evacuation_failure`, `oom_seen`). Unknown rules return `Skipped` for backward compatibility.
 - `gc-forge validate <log> --manifest <path>` subcommand: prints a per-rule report, exits 3 on any failure (per SPEC §10.1), and optionally persists the result back into the manifest with `--update-manifest`.
