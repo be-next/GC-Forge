@@ -1,0 +1,35 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+extends: humongous-g1-classic.yaml
+
+metadata:
+  name: humongous-g1-evac-fail
+  version: 1.0.0
+  description: |
+    R3 — humongous-pressure pushed past the heap's elastic capacity. 70%
+    humongous allocations on a tighter 1 GiB heap. Expected fingerprint:
+    humongous_allocation plus an evacuation_failure entry as G1 fails to
+    relocate humongous regions before the next allocation arrives.
+  tags: [mvp, humongous, g1, evacuation-failure]
+
+spec:
+  gc:
+    options:
+      heap:
+        min: 1g
+        max: 1g
+
+  regime:
+    parameters:
+      humongous_ratio: 0.7
+      humongous_size_kb: auto
+      allocation_rate_mb_s: 80
+
+  expected:
+    phenomena:
+      - humongous_allocation
+      - evacuation_failure
+    invariants:
+      - { rule: "humongous_alloc_per_sec >= 1",            threshold: 1 }
+      - { rule: "evacuation_failure_count >= 1",           threshold: 1 }

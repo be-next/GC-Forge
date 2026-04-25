@@ -128,6 +128,41 @@ fn parallel_baseline_emits_using_parallel() {
 }
 
 #[test]
+fn humongous_g1_preset_emits_humongous_marker() {
+    let root = workspace_root();
+    let preset = root.join("presets/humongous-g1-classic.yaml");
+    let dir = tempdir().unwrap();
+    let status = Command::new(cli_bin())
+        .args([
+            "run",
+            preset.to_str().unwrap(),
+            "--out-dir",
+            dir.path().to_str().unwrap(),
+            "--image",
+            RUNNER_IMAGE,
+            "--embedded-harness",
+            HARNESS_IN_IMAGE,
+            "--override",
+            "spec.duration=12s",
+        ])
+        .status()
+        .expect("failed to invoke gc-forge");
+    assert!(
+        status.success(),
+        "gc-forge run failed for humongous-g1-classic"
+    );
+    let log = locate_log(dir.path()).expect("humongous log produced");
+    let body = std::fs::read_to_string(&log).unwrap();
+    // G1 logs humongous allocations on the `gc,humongous` tag (or via
+    // "humongous regions" lines on `gc,heap`).
+    assert!(
+        body.contains("humongous"),
+        "humongous marker missing in {}",
+        log.display()
+    );
+}
+
+#[test]
 fn burst_g1_preset_runs_through_pipeline() {
     // R2 (allocation-burst) on G1. We override the duration down to a
     // value that still covers one full burst (5 s burst inside a 30 s

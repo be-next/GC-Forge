@@ -1,0 +1,46 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+metadata:
+  name: humongous-g1-classic
+  version: 1.0.0
+  description: |
+    R3 — humongous-pressure on G1. 50% of allocations are 2 MiB humongous
+    chunks against a 2 GiB heap, with the rest being small allocations.
+    Expected fingerprint: humongous regions visible in the GC log, mixed
+    GC triggered ahead of IHOP, no evacuation failure (the heap absorbs
+    the pressure).
+  tags: [mvp, humongous, g1]
+  authors: ["GC-Forge MVP"]
+
+spec:
+  jvm:
+    vendor: temurin
+    major: 21
+
+  gc:
+    algorithm: G1
+    options:
+      heap:
+        min: 2g
+        max: 2g
+
+  regime:
+    kind: humongous-pressure
+    parameters:
+      humongous_ratio: 0.5
+      humongous_size_kb: auto
+      allocation_rate_mb_s: 80
+
+  duration: 2m
+  warmup: 10s
+  seed: 0xC0FFEE
+
+  expected:
+    phenomena:
+      - humongous_allocation
+      - mixed_gc_efficient
+    invariants:
+      - { rule: "humongous_alloc_per_sec >= 1",            threshold: 1 }
+      - { rule: "humongous_regions_visible_in_log",        threshold: true }
+      - { rule: "mixed_gc_triggered_below_ihop",           threshold: true }
