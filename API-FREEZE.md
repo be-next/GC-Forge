@@ -1,10 +1,11 @@
-# API freeze — iteration 11 (regime-mixed-pathological, R6)
+# API freeze — iteration 12 (regime-microservice, R7)
 
 Gate 1 artifact. Overwritten at every iteration before parallel work starts.
 
 ## Scope
 
-R6 (`mixed-gc-pathological`) lands. Same template as previous regimes.
+R7 (`microservice-stop-and-go`) lands. Closes the MVP catalogue at 7/7
+regimes.
 
 ## Public Rust surface added
 
@@ -12,49 +13,51 @@ R6 (`mixed-gc-pathological`) lands. Same template as previous regimes.
 
 | Item | Kind | Notes |
 |------|------|-------|
-| `MixedGcPathologicalRegime`            | struct | implements `Regime` for R6 |
-| `MixedGcPathologicalParams`            | struct | typed view of R6 parameters |
-| `MixedGcPathologicalParams::from_yaml` | fn     | parses with defaults, rejects unknown keys |
+| `MicroserviceStopGoRegime`            | struct | implements `Regime` for R7 |
+| `MicroserviceStopGoParams`            | struct | typed view of R7 parameters |
+| `MicroserviceStopGoParams::from_yaml` | fn     | parses with defaults, rejects unknown keys |
+| `Cycles`                              | enum   | `Auto | Fixed(u32)` (mirrors R2's `BurstsCount`) |
 
-`resolve(&RegimeSpec)` now also returns `MixedGcPathologicalRegime` for
-`kind: "mixed-gc-pathological"`.
+`resolve(&RegimeSpec)` now also returns `MicroserviceStopGoRegime` for
+`kind: "microservice-stop-and-go"`.
 
 ## Public Java surface added
 
 | Item | Kind | Notes |
 |------|------|-------|
-| `dev.gcforge.harness.regimes.MixedGcPathologicalRegime` | class | `id() = "mixed-gc-pathological"`, registered. |
+| `dev.gcforge.harness.regimes.MicroserviceStopGoRegime` | class | `id() = "microservice-stop-and-go"`, registered. |
 
 ## YAML schema changes
 
-None at the typed level. One new preset ships under `presets/`:
+None at the typed level. Two new presets ship under `presets/`:
 
-- `presets/mixed-pathological-g1.yaml` — G1, 2 GiB heap, 5 min.
+- `presets/microservice-g1-stop-go.yaml` — G1, 1 GiB heap, 5 min.
+- `presets/microservice-zgc-stop-go.yaml` — ZGC, 1 GiB, extends G1.
 
 ## Invariants for Tester-unit
 
 Rust:
-- `MixedGcPathologicalParams::from_yaml(Value::Null)` returns the documented
-  defaults (`old_gen_pressure=0.7`, `fragmentation_factor=2.0`,
-  `survivor_age_target=15`).
-- `old_gen_pressure` rejects values outside `(0, 1]`.
-- `fragmentation_factor` rejects values outside `[1.0, 3.0]`.
-- `survivor_age_target` rejects values > 15 (the JVM hard-cap).
-- `workload_args` emits the regime kind, ISO duration, hex seed, and the three
+- Defaults: `active_period_s=10`, `idle_period_s=20`, `active_rate_mb_s=100`,
+  `cycles=auto`.
+- Unknown keys → `RegimeError::UnknownParameter`.
+- Zero `active_period_s`, zero `idle_period_s`, zero `active_rate_mb_s` rejected.
+- `workload_args` emits the regime kind, ISO duration, hex seed, and four
   `key=value` parameters.
-- `resolve` on `kind: "mixed-gc-pathological"` returns the regime.
+- `resolve` on `kind: "microservice-stop-and-go"` returns the regime.
 
 Java:
-- `MixedGcPathologicalRegime` runs to completion within a 5 s budget for short
-  windows.
-- Unknown keys / out-of-range values rejected at run time.
+- `MicroserviceStopGoRegime` runs to completion within a 5 s budget for
+  short windows (≤ 2 s).
+- The regime alternates: when wall-clock is in active phase, it allocates;
+  when in idle phase, it sleeps (no allocations).
 
 ## Doc sections to author (Doc-writer)
 
-- `doc/user/regimes.md` — fill the R6 section.
-- `CHANGELOG.md` — Unreleased: R6 regime, one preset, integration test.
+- `doc/user/regimes.md` — fill the R7 section. Note the catalogue is now
+  complete.
+- `CHANGELOG.md` — Unreleased: R7 regime, two presets, integration test.
 
 ## Approval
 
-- Coder: A5 — frozen 2026-04-25
-- Reviewer: A6 — `Approved: A6 2026-04-25` (read against SPEC-FONCTIONNELLE §4.6; heap-relative `old_gen_pressure` approximation via `Runtime.maxMemory` noted as best-effort).
+- Coder: A6 — frozen 2026-04-25
+- Reviewer: A1 — `Approved: A1 2026-04-25` (read against SPEC-FONCTIONNELLE §4.7; alternation shape and `Cycles` enum mirror R2 cleanly).

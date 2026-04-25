@@ -1,0 +1,22 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+extends: microservice-g1-stop-go.yaml
+
+metadata:
+  name: microservice-zgc-stop-go
+  version: 1.0.0
+  description: |
+    R7 — microservice-stop-and-go on generational ZGC. The contrast
+    against the G1 baseline is part of the point: ZGC's concurrent
+    reclamation produces a smoother log with much less idle/active
+    contrast — pedagogically interesting in itself.
+  tags: [mvp, microservice, stop-and-go, zgc]
+
+spec:
+  gc:
+    algorithm: ZGC
+    options:
+      heap:
+        min: 1g
+        max: 1g

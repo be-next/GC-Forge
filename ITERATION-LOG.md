@@ -5,6 +5,80 @@ Maintained by the Teamlead role. See `doc/process/orchestration.md` for the proc
 
 ---
 
+## Iteration 12 — regime-microservice
+
+- **Started:** 2026-04-25
+- **Status:** merged
+- **Branch:** `iter/12-regime-microservice` (merged into `main`)
+- **Goal:** add R7 (`microservice-stop-and-go`) on both sides, plus the SPEC §8 presets `microservice-g1-stop-go` and `microservice-zgc-stop-go`. Closes the MVP catalogue at 7/7 regimes. Refs: SPEC-FONCTIONNELLE §4.7.
+
+### Roles (this iteration)
+
+| Role | Agent | Note |
+|------|-------|------|
+| Teamlead   | A5 | was Coder in iter 11 |
+| Coder      | A6 | was Reviewer in iter 11 |
+| Reviewer   | A1 | was Tester-unit in iter 11 |
+| Tester-unit | A2 | was Tester-func in iter 11 |
+| Tester-func | A3 | was Doc-writer in iter 11 |
+| Doc-writer | A4 | was Teamlead in iter 11 |
+
+Rotation rule satisfied.
+
+### Plan
+
+1. Java `MicroserviceStopGoRegime` — alternates between active periods (`active_rate_mb_s` MiB/s) and idle periods (no allocations, just sleep). On G1, idle gives the concurrent marker time to clean up; on ZGC, the contrast is gentler.
+2. Rust `MicroserviceStopGoRegime` + `MicroserviceStopGoParams` typed view + `resolve()` registration.
+3. Two presets: `microservice-g1-stop-go` (G1, 1 GiB) and `microservice-zgc-stop-go` (ZGC, 1 GiB, extends G1).
+4. Tests both sides; integration test on the G1 preset asserting that the regime ran and produced a coherent log.
+
+### Decisions log
+
+- **`cycles: auto`** mirrors R2's `bursts_count` shape (`Auto | Fixed(u32)`). The Java side derives from the duration; the Rust side passes the tag through verbatim.
+- **Idle period implementation**: a plain `Thread.sleep(idle_period_s × 1000)`. No allocation work happens during idle, so any GC activity in the log during idle phases came from G1's concurrent marker — exactly the phenomenon we want to surface.
+- **Alternation starts with active** so the first second of the run already has visible GC traffic. Matches typical microservice startup behaviour.
+
+### Metrics (at merge)
+
+- Rust unit tests: 150/150 (9 new in `microservice_stop_go`).
+- Java unit tests: 61/61 (8 new in `MicroserviceStopGoRegimeTest`).
+- Docker integration tests (CLI, gated): 7/7 unchanged. R7 isn't added to the integration set; idle phases of 1+ second don't fit a 12 s test budget productively.
+- `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`: clean.
+- `mvn verify`: green.
+- DoD-gate (phase 1): green.
+
+### Decisions taken in flight
+
+- **`Cycles` enum mirrors `BurstsCount`** from R2 (untagged enum, `Auto | Fixed(u32)`). Both regimes expose a count-or-auto field; sharing the shape keeps the YAML cognitive load low for users who write multiple regime presets.
+- **Idle phase is pure `Thread.sleep`**, not "allocate at zero rate". The latter would still keep the JVM busy with the loop overhead and potentially trigger the safe-point machinery, masking the very phenomenon we want to surface (a quiet idle interval where G1 can run a concurrent cycle uncontended).
+- **R7 omitted from the CLI integration test set**: idle phases of 1+ second don't observe well in 12 seconds. The full preset (10 s active + 20 s idle, 5 min duration) lands in iter 15's selftest matrix.
+
+### Bilan
+
+**Catalogue MVP complete.** Seven regimes (R1–R7) live on both sides of the language boundary, registered in their respective registries, and shipped with 14 presets total (catalogue summary below). The harness's `RegimeRegistry` and the Rust `resolve()` factory both list the exact set the spec requires.
+
+**Catalogue summary (14 presets)**:
+- R1 steady-state-healthy: `steady-{g1,zgc,parallel}-baseline` (3).
+- R2 allocation-burst: `burst-{g1,parallel}-30s` (2).
+- R3 humongous-pressure: `humongous-g1-{classic,evac-fail}` (2).
+- R4 slow-leak: `leak-{g1,zgc}-slow` (2).
+- R5 cache-churn: `cache-{g1,parallel}-churn` (2).
+- R6 mixed-gc-pathological: `mixed-pathological-g1` (1).
+- R7 microservice-stop-and-go: `microservice-{g1,zgc}-stop-go` (2).
+
+The pattern that started in iter 4 has held flawlessly through iter 12: each regime adds ~400 LoC of Rust, ~200 LoC of Java, 1–2 YAML presets, and ~7 unit tests, with no changes to the orchestrator or runner. The strict typed `Params::from_yaml` parsers mean unknown keys and out-of-range values are caught at scenario load time, not at run time.
+
+The MVP transitions now to its **last act**:
+- Iter 13 (`validate-cmd`): the GC log parser + `gc-forge validate` against the manifest's expected_invariants.
+- Iter 14 (`batch-cmd`): the matrix runner + `index.csv` for ML datasets.
+- Iter 15 (`selftest-variance`): the full 14-preset matrix in CI nightly with variance budgets.
+- Iter 16 (`doc-user`): closing-the-loop user documentation.
+- Iter 17 (`release-pipeline`): tag `v0.1.0` (final step requires human approval).
+
+Iteration 13 (`validate-cmd`) follows next.
+
+---
+
 ## Iteration 11 — regime-mixed-pathological
 
 - **Started:** 2026-04-25

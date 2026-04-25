@@ -1,0 +1,45 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+metadata:
+  name: microservice-g1-stop-go
+  version: 1.0.0
+  description: |
+    R7 — microservice-stop-and-go on G1. 10-second active phases at
+    100 MiB/s alternating with 20-second idle phases. The idle stretches
+    are where G1's concurrent marker tends to fire — the canonical
+    "concurrent_cycle_in_idle" signature on a microservice-shaped load.
+  tags: [mvp, microservice, stop-and-go, g1]
+  authors: ["GC-Forge MVP"]
+
+spec:
+  jvm:
+    vendor: temurin
+    major: 21
+
+  gc:
+    algorithm: G1
+    options:
+      heap:
+        min: 1g
+        max: 1g
+
+  regime:
+    kind: microservice-stop-and-go
+    parameters:
+      active_period_s: 10
+      idle_period_s: 20
+      active_rate_mb_s: 100
+      cycles: auto
+
+  duration: 5m
+  warmup: 10s
+  seed: 0xC0FFEE
+
+  expected:
+    phenomena:
+      - concurrent_cycle_in_idle
+    invariants:
+      - { rule: "idle_phase_few_young_gc",                threshold: 1 }
+      - { rule: "concurrent_cycle_during_idle_g1",        threshold: true }
+      - { rule: "active_idle_phase_alternation_visible",  threshold: true }

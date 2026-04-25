@@ -3,6 +3,7 @@ package dev.gcforge.harness;
 import dev.gcforge.harness.regimes.AllocationBurstRegime;
 import dev.gcforge.harness.regimes.CacheChurnRegime;
 import dev.gcforge.harness.regimes.HumongousPressureRegime;
+import dev.gcforge.harness.regimes.MicroserviceStopGoRegime;
 import dev.gcforge.harness.regimes.MixedGcPathologicalRegime;
 import dev.gcforge.harness.regimes.SlowLeakRegime;
 import dev.gcforge.harness.regimes.SteadyStateRegime;
@@ -31,8 +32,8 @@ public final class RegimeRegistry {
         register("cache-churn", CacheChurnRegime::new);
         register("slow-leak", SlowLeakRegime::new);
         register("mixed-gc-pathological", MixedGcPathologicalRegime::new);
-        // Future regime (microservice-stop-and-go) registers here alongside
-        // its iteration's class additions.
+        register("microservice-stop-and-go", MicroserviceStopGoRegime::new);
+        // MVP catalogue complete (R1..R7).
     }
 
     private RegimeRegistry() {

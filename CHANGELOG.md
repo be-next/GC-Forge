@@ -7,6 +7,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ### Added
 
+- R7 `microservice-stop-and-go` regime on both sides — **closes the MVP regime catalogue at 7/7**:
+    - `gc-forge-regimes::MicroserviceStopGoRegime` + `MicroserviceStopGoParams` with `active_period_s`, `idle_period_s`, `active_rate_mb_s`, `cycles` (`auto` or fixed). Registered in `resolve()`.
+    - `dev.gcforge.harness.regimes.MicroserviceStopGoRegime` Java implementation: alternates active allocation phases with pure-sleep idle phases.
+- Two new presets: `presets/microservice-g1-stop-go.yaml` (G1, 1 GiB) and `presets/microservice-zgc-stop-go.yaml` (ZGC, 1 GiB, extends G1).
+- `doc/user/regimes.md` R7 section filled.
 - R6 `mixed-gc-pathological` regime on both sides:
     - `gc-forge-regimes::MixedGcPathologicalRegime` + `MixedGcPathologicalParams` with `old_gen_pressure` (`(0, 1]`), `fragmentation_factor` (`[1.0, 3.0]`), `survivor_age_target` (`[1, 15]`). Registered in `resolve()`.
     - `dev.gcforge.harness.regimes.MixedGcPathologicalRegime` Java implementation: pre-fills old gen with chunks in interleaved size classes (small/medium/large), then sustains a steady allocation rate against the saturated heap. Registered in `RegimeRegistry`.

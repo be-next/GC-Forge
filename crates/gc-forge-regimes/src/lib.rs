@@ -7,6 +7,7 @@
 pub mod allocation_burst;
 pub mod cache_churn;
 pub mod humongous_pressure;
+pub mod microservice_stop_go;
 pub mod mixed_gc_pathological;
 pub mod regime;
 pub mod slow_leak;
@@ -15,6 +16,7 @@ pub mod steady_state;
 pub use allocation_burst::{AllocationBurstParams, AllocationBurstRegime, BurstsCount};
 pub use cache_churn::{CacheChurnParams, CacheChurnRegime};
 pub use humongous_pressure::{HumongousPressureParams, HumongousPressureRegime, HumongousSize};
+pub use microservice_stop_go::{Cycles, MicroserviceStopGoParams, MicroserviceStopGoRegime};
 pub use mixed_gc_pathological::{MixedGcPathologicalParams, MixedGcPathologicalRegime};
 pub use regime::{resolve, Regime, RegimeError};
 pub use slow_leak::{SlowLeakParams, SlowLeakRegime};

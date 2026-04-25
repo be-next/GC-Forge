@@ -255,4 +255,41 @@ when the regime parameters or invariants change.
 
 ## R7 — `microservice-stop-and-go`
 
-_TODO iter 12._
+**Available since:** iteration 12.
+
+> A workload that alternates between active periods (where it allocates at
+> a configured rate) and idle periods (where it does nothing). Models the
+> request-driven pattern of a microservice between bursts. On G1, the idle
+> stretches are exactly when concurrent-mark cycles tend to fire; on ZGC,
+> the contrast is gentler.
+
+### Parameters
+
+| Key                | Type             | Default | Notes |
+|--------------------|------------------|---------|-------|
+| `active_period_s`  | integer (> 0)    | `10`    | Length of each active (allocating) phase. |
+| `idle_period_s`    | integer (> 0)    | `20`    | Length of each idle (sleeping) phase. |
+| `active_rate_mb_s` | integer (> 0)    | `100`   | Allocation rate during active phases. |
+| `cycles`           | integer or `auto`| `auto`  | Total number of (active+idle) cycles; `auto` derives from the run duration. |
+
+### Expected signature
+
+- Idle phases show very few young GCs (`≤ 1 / 10 s`).
+- G1: a concurrent-cycle marker is visible during idle stretches.
+- ZGC: log is much smoother — the regime is less of a behavioural showcase
+  there but the contrast is itself pedagogical.
+
+### Phenomena exhibited
+
+- `concurrent_cycle_in_idle`.
+
+### Use cases
+
+- Modelling realistic microservice traffic patterns.
+- Contrasting G1's stop-the-world cycle against ZGC's concurrent reclamation
+  on the same workload.
+
+### Shipped baselines
+
+- `presets/microservice-g1-stop-go.yaml` — G1, 1 GiB heap, 5 min.
+- `presets/microservice-zgc-stop-go.yaml` — extends G1, swaps to ZGC.
