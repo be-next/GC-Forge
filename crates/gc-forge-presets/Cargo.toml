@@ -9,9 +9,13 @@ license.workspace = true
 repository.workspace = true
 homepage.workspace = true
 readme.workspace = true
+build = "build.rs"
 
 [dependencies]
 anyhow    = { workspace = true }
+
+[dev-dependencies]
+serde_yaml = { workspace = true }
 
 [lints]
 workspace = true

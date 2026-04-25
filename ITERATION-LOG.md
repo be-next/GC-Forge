@@ -5,6 +5,73 @@ Maintained by the Teamlead role. See `doc/process/orchestration.md` for the proc
 
 ---
 
+## Iteration 15 — selftest-variance
+
+- **Started:** 2026-04-25
+- **Status:** merged
+- **Branch:** `iter/15-selftest-variance` (merged into `main`)
+- **Goal:** ship the four qualification subcommands — `presets list/show/export`, `selftest`, `variance-check` — and embed the 14 MVP presets in the binary so that `cargo install gc-forge-cli` ships a self-sufficient tool. Refs: SPEC-FONCTIONNELLE §7.2, §7.3, §9.5, §9.6.
+
+### Roles (this iteration)
+
+| Role | Agent | Note |
+|------|-------|------|
+| Teamlead   | A2 | was Coder in iter 14 |
+| Coder      | A3 | was Reviewer in iter 14 |
+| Reviewer   | A4 | was Tester-unit in iter 14 |
+| Tester-unit | A5 | was Tester-func in iter 14 |
+| Tester-func | A6 | was Doc-writer in iter 14 |
+| Doc-writer | A1 | was Teamlead in iter 14 |
+
+Rotation rule satisfied.
+
+### Plan
+
+1. `gc-forge-presets` crate gets a `build.rs` that scans `presets/*.yaml` at compile time and emits a `PRESETS: &[(name, body)]` slice. The crate exposes `list_presets()`, `find_preset(name)`, and `embedded_yaml(name)`.
+2. `gc-forge presets list [--regime …] [--algo …]` enumerates the embedded presets (with metadata: name, regime, algorithm). `gc-forge presets show <name>` prints the YAML body. `gc-forge presets export <name> > out.yaml` writes the body to stdout (suitable for piping).
+3. `gc-forge selftest` iterates over every embedded preset, runs it through the orchestrator with a `--override spec.duration=…` knob (default 12 s; selftest's whole budget ≈ 14 × 12 s ≈ 3 minutes), and validates each produced log. Reports per-preset `passed | failed | skipped` plus the duration; exits non-zero if any preset failed.
+4. `gc-forge variance-check <preset> --runs N`: runs the preset N times with the same seed, parses each log, computes coefficient of variation on `young_count`, `mean_pause_ms`, `p99_pause_ms`. Reports per-metric CV, fails when any metric exceeds the spec budget (CV > 8 % on aggregate counts, > 20 % on extremes).
+5. Tests + doc + CHANGELOG.
+
+### Decisions log
+
+- **`build.rs` over `include_str!` enumeration**: with 14 presets the explicit enumeration would be a maintenance footgun (forget to add a preset, the binary silently misses it). The build script scans the directory, emits a Rust file in `OUT_DIR`, and the crate `include!`s it. Rebuilds when any preset YAML changes.
+- **Selftest defaults to 12 s per preset** (overrideable via `--per-preset-duration`). Full-fidelity 5 min × 14 presets = 70 minutes — too long for nightly CI's 30-minute budget. The spec invariants will largely be `Skipped` for short runs, which the validator already handles cleanly; the *real* validation budget lives in iter 17's release pipeline that pins the runtime to the spec value.
+- **Variance-check uses the same seed** for every run (the seed seeds the harness's RNG; the JVM's nondeterminism is what we measure). This matches SPEC §7.3's "Même scénario, même seed, même image Docker ⇒ phénomènes attendus présents avec probabilité ≥ 99 %".
+- **No HTML report** for variance-check this iteration. The text output is sufficient for CI; an HTML formatter can land in V1 alongside the matrix HTML.
+
+### Metrics (at merge)
+
+- Rust unit tests: 191/191 (4 new in `gc-forge-presets` for the build.rs-generated PRESETS slice).
+- Java unit tests: 61/61 (unchanged).
+- `gc-forge presets list` smoke: 14 presets enumerated; the 8 self-contained ones expose `algo=… regime=…`, the 6 that use `extends:` show the fallback annotation.
+- `gc-forge presets show steady-g1-baseline`: prints the YAML body, exit 0.
+- `gc-forge presets show nonexistent`: exits 1 with `error: preset "nonexistent" not found`.
+- `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`: clean.
+- `mvn verify`: green.
+- DoD-gate (phase 1): green.
+
+### Decisions taken in flight
+
+- **`Scenario::from_yaml` short-circuit on extends-only presets**: the 6 presets that use `extends:` cannot deserialise from their embedded body alone (extends resolution needs filesystem access). Rather than embedding the resolved tree at build time (which would lose the extends relationship), `presets list` falls back to a name-only annotation. `presets show` prints the verbatim body, leaving extends intact for downstream tooling.
+- **`OutputSpec` import in qualify.rs's variance-check**: variance-check writes per-run logs to `out/variance/run-NN.log`, and the runner reads `spec.output.log_path` if present. We override the scenario's `spec.output.log_path` per run so the runner doesn't overwrite the same file across runs.
+- **`io::Error::other` over `io::Error::new(ErrorKind::Other, …)`**: clippy preferred the shorter form, available since Rust 1.74. Applied uniformly in qualify.rs.
+- **Validation drift on short runs**: the selftest's 12-second budget per preset means most invariants will return `Skipped` (e.g. the slow-leak's `full_gc_or_oom_at_end` won't fire in 12 s). This is by design — the validator's `Skipped`-by-default policy keeps the selftest green on short runs, while iter 17's release pipeline will pin a longer budget for the qualification matrix.
+
+### Bilan
+
+The qualification surface is in place. `gc-forge presets list` exposes the 14-preset catalogue; `selftest` runs them all in ~3 minutes; `variance-check` measures CV against the SPEC §7.3 budgets; embedded presets ship inside the binary so `cargo install gc-forge-cli` is genuinely self-sufficient.
+
+The build-script approach for embedded presets is the right call: 14 entries enumerated by hand would forget items by their second touch. The script scans `presets/*.yaml` at compile time, emits a generated `PRESETS: &[(name, body)]` slice, and `cargo:rerun-if-changed` notifies Cargo of every preset's path so adding a YAML triggers a rebuild without manual intervention.
+
+The trade-off the validator's `Skipped`-by-default policy made in iter 13 pays off here: short selftest runs stay clean even though many spec invariants need longer windows to fire. The full-fidelity invariant matrix is iter 17's release pipeline territory.
+
+Iteration 16 (`doc-user`) follows next. With every functional surface shipped, iter 16 closes the documentation loop: `getting-started`, `regimes`, `scenario-reference`, `cli-reference` are already in place; iter 16 polishes them, adds a pitch document, and seeds `doc/traceability.md` (phenomenon × preset × insight-capability matrix per SPEC §11).
+
+Then iter 17 wires the release pipeline and stops at the `v0.1.0` tag for human approval.
+
+---
+
 ## Iteration 14 — batch-cmd
 
 - **Started:** 2026-04-25

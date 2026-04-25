@@ -7,6 +7,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ### Added
 
+- **Embedded preset catalogue.** `gc-forge-presets` now ships every `presets/*.yaml` body inside the binary via a `build.rs` script. `cargo install gc-forge-cli` installs a self-sufficient tool. `list_preset_names()`, `all_presets()`, `embedded_yaml(name)` are the public lookup helpers.
+- `gc-forge presets list/show/export` subcommands. `list` shows name + algorithm + regime; presets using `extends:` are listed with an `(extends another preset)` annotation. `show` and `export` print the YAML body to stdout.
+- `gc-forge selftest`: runs every embedded preset through the orchestrator, validates each log, exits `3` if any preset's validator failed. `--per-preset-duration` (default `12s`) keeps the full pass under ~3 minutes for nightly CI.
+- `gc-forge variance-check <preset-or-path>`: repeats a scenario `N` times (default `5`) with the same seed and reports CV on `young_count`, `mean_pause_ms`, `p99_pause_ms`. Budgets: 8 % / 10 % / 20 % per SPEC §7.3. Exits `3` when any metric exceeds its budget.
+- `doc/user/cli-reference.md`: dropped the iter-15 TODO marker; full documentation for presets, selftest, variance-check.
 - `gc-forge-scenario::matrix` — typed model of `gc-forge/matrix.v1` (Matrix, MatrixSpec, MatrixCell). `Matrix::expand()` produces the cartesian product of axes and seeds, minus filter cells. Axis ordering is preserved via `IndexMap` so cell order is deterministic. 7 unit tests covering parsing, expansion (with/without seeds), filter exclusions, unknown api version.
 - `gc-forge batch <matrix.yaml> [--out-dir DIR] [--image TAG] …` subcommand: runs each cell sequentially through the same orchestrator as `gc-forge run`, writes per-cell logs and manifests under `<out-dir>/cellN-<name>-<seed>.{log,manifest.yaml}`, and emits an `index.csv` row per cell. Supports `--continue-on-error` for the corpus regen pipeline; exits `2` when any cell failed.
 - `doc/user/cli-reference.md` — `batch` section documents the matrix schema, axis/filter semantics, per-cell output filename convention, and exit codes.

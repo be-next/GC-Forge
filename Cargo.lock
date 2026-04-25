@@ -278,6 +278,7 @@ name = "gc-forge-presets"
 version = "0.0.1-dev"
 dependencies = [
  "anyhow",
+ "serde_yaml",
 ]
 
 [[package]]

@@ -178,6 +178,59 @@ Exit codes: `0` if all cells succeed; `2` if any cell failed.
 Concurrency lands in V1 once Docker concurrency on macOS has been
 characterised.
 
-## `gc-forge presets`, `selftest`, `variance-check`
+## `gc-forge presets`
 
-_TODO iter 15._
+```
+gc-forge presets list
+gc-forge presets show <NAME>
+gc-forge presets export <NAME>
+```
+
+Operates on the catalogue of presets embedded in the binary at compile
+time (the contents of `presets/*.yaml` from the source tree). `list`
+enumerates name + algorithm + regime where the body is self-contained;
+presets that use `extends:` are listed by name with an `(extends another
+preset)` annotation. `show` prints the YAML body. `export` is identical
+to `show` and is meant for piping (`gc-forge presets export foo > foo.yaml`).
+
+## `gc-forge selftest`
+
+```
+gc-forge selftest [--image TAG] [--embedded-harness PATH]
+                  [--per-preset-duration DUR] [--out-dir DIR]
+                  [--continue-on-error]
+```
+
+Runs every embedded preset through the orchestrator, validates each
+log against the manifest's expected invariants, and reports a summary.
+
+Defaults:
+
+- `--per-preset-duration 12s`: keeps the full pass under ~3 minutes,
+  which fits a nightly CI budget. Override for the spec-fidelity run.
+- `--out-dir out/selftest`: per-preset logs and manifests land there.
+- Stops on first failure unless `--continue-on-error` is set.
+
+Exit codes: `0` if every recognised invariant passed (skipped invariants
+don't fail the run); `3` if any preset's validator returned `Failed`.
+
+## `gc-forge variance-check`
+
+```
+gc-forge variance-check <PRESET-OR-PATH> [--runs N]
+                                         [--image TAG] [--embedded-harness PATH]
+                                         [--duration DUR] [--out-dir DIR]
+```
+
+Repeats a scenario `N` times (default `5`) with the same seed, parses
+each log, and reports the coefficient of variation (CV) on:
+
+- `young_count`        — budget: ≤ 8 % CV.
+- `mean_pause_ms`      — budget: ≤ 10 % CV.
+- `p99_pause_ms`       — budget: ≤ 20 % CV (centiles vary more).
+
+The first argument is either an embedded preset name (e.g.
+`steady-g1-baseline`) or a path to a scenario YAML.
+
+Exit codes: `0` when every metric stays within budget; `3` when any
+metric exceeds it.

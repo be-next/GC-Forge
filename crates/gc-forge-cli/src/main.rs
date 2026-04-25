@@ -6,6 +6,7 @@
 #![allow(clippy::unnecessary_wraps)]
 
 mod batch;
+mod qualify;
 mod run;
 mod validate;
 
@@ -44,6 +45,15 @@ enum Command {
 
     /// Runs every cell of a matrix and writes an index CSV.
     Batch(batch::BatchArgs),
+
+    /// Embedded preset catalogue (list/show/export).
+    Presets(qualify::PresetsArgs),
+
+    /// Runs every embedded preset, validates the produced log, reports.
+    Selftest(qualify::SelftestArgs),
+
+    /// Repeats a scenario N times and reports inter-run variance.
+    VarianceCheck(qualify::VarianceCheckArgs),
 }
 
 #[derive(Debug, clap::Args)]
@@ -99,6 +109,27 @@ fn main() -> ExitCode {
             }
             Err(other) => {
                 eprintln!("error: {other}");
+                ExitCode::from(2)
+            }
+        },
+        Some(Command::Presets(args)) => match qualify::execute_presets(&args) {
+            Ok(code) => ExitCode::from(code),
+            Err(e) => {
+                eprintln!("error: {e}");
+                ExitCode::from(1)
+            }
+        },
+        Some(Command::Selftest(args)) => match qualify::execute_selftest(&args) {
+            Ok(code) => ExitCode::from(code),
+            Err(e) => {
+                eprintln!("error: {e}");
+                ExitCode::from(2)
+            }
+        },
+        Some(Command::VarianceCheck(args)) => match qualify::execute_variance(&args) {
+            Ok(code) => ExitCode::from(code),
+            Err(e) => {
+                eprintln!("error: {e}");
                 ExitCode::from(2)
             }
         },
