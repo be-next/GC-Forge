@@ -1,13 +1,12 @@
-# API freeze — iteration 7 (regime-burst, R2)
+# API freeze — iteration 8 (regime-humongous, R3)
 
 Gate 1 artifact. Overwritten at every iteration before parallel work starts.
 
 ## Scope
 
-R2 (`allocation-burst`) lands as the second concrete `Regime` on both sides
-of the language boundary. The CLI orchestrator (iter 5) and runner (iter 3)
-are unchanged; the new regime is wired in via the existing `RegimeRegistry`
-(Java) and `resolve()` factory (Rust).
+R3 (`humongous-pressure`) lands as the third concrete `Regime`. Same shape
+as R1/R2 — Java implementation, Rust typed view, `resolve()` registration,
+two presets.
 
 ## Public Rust surface added
 
@@ -15,60 +14,56 @@ are unchanged; the new regime is wired in via the existing `RegimeRegistry`
 
 | Item | Kind | Notes |
 |------|------|-------|
-| `AllocationBurstRegime`              | struct | implements `Regime` for R2 |
-| `AllocationBurstParams`              | struct | typed view of `regime.parameters` for R2 |
-| `AllocationBurstParams::from_yaml`   | fn     | parses with defaults, rejects unknown keys |
+| `HumongousPressureRegime`            | struct | implements `Regime` for R3 |
+| `HumongousPressureParams`            | struct | typed view of R3 parameters |
+| `HumongousPressureParams::from_yaml` | fn     | parses with defaults, rejects unknown keys |
+| `HumongousSize`                      | enum   | `Auto` (default 2 MiB) or `Fixed(u32)` KiB |
 
-`resolve(&RegimeSpec)` now also returns `AllocationBurstRegime` for
-`kind: "allocation-burst"`.
+`resolve(&RegimeSpec)` now also returns `HumongousPressureRegime` for
+`kind: "humongous-pressure"`.
 
 ## Public Java surface added
 
-### Crate `workload-harness`
-
 | Item | Kind | Notes |
 |------|------|-------|
-| `dev.gcforge.harness.regimes.AllocationBurstRegime` | class | `id() = "allocation-burst"`, registered in `RegimeRegistry`. |
+| `dev.gcforge.harness.regimes.HumongousPressureRegime` | class | `id() = "humongous-pressure"`, registered. |
 
 ## YAML schema changes
 
-None at the typed level. Two new preset YAMLs ship under `presets/`:
+None at the typed level. Two new presets ship under `presets/`:
 
-- `presets/burst-g1-30s.yaml` — G1, 2 GiB heap, 5 min duration, 30 s burst
-  period, 5 s burst duration, base 30 MiB/s, burst 200 MiB/s.
-- `presets/burst-parallel-30s.yaml` — same schedule, Parallel collector.
+- `presets/humongous-g1-classic.yaml` — G1, 2 GiB heap, 2 min,
+  `humongous_ratio: 0.5`, mixed-GC efficient.
+- `presets/humongous-g1-evac-fail.yaml` — G1, 1 GiB heap, 2 min,
+  `humongous_ratio: 0.7`, evacuation-failure expected.
 
 ## Invariants for Tester-unit
 
 Rust:
-- `AllocationBurstParams::from_yaml(Value::Null)` returns the documented
-  defaults (`base_rate_mb_s=30`, `burst_rate_mb_s=200`,
-  `burst_duration_s=5`, `burst_period_s=30`).
-- Unknown keys are rejected with `RegimeError::UnknownParameter`.
-- Out-of-range values (`base_rate_mb_s` > `burst_rate_mb_s`,
-  `burst_duration_s` > `burst_period_s`, zero period) fail with
-  `RegimeError::OutOfRange`.
-- `workload_args` emits the regime kind, ISO duration, hex seed, and the
-  five `key=value` parameters in declaration order.
-- `resolve` on `kind: "allocation-burst"` returns the regime.
-- Both new presets pass `gc-forge lint`.
+- `HumongousPressureParams::from_yaml(Value::Null)` returns the defaults
+  (`humongous_ratio=0.5`, `humongous_size_kb=Auto`, `allocation_rate_mb_s=80`).
+- `humongous_ratio` rejects `0`, negative values, and values `> 1`.
+- `humongous_size_kb: auto` parses to `HumongousSize::Auto`; integers parse to `Fixed(n)`.
+- `workload_args` emits the regime kind, ISO duration, hex seed, and the four `key=value` parameters.
+- `resolve` on `kind: "humongous-pressure"` returns the regime.
 
 Java:
-- `AllocationBurstRegime` runs to completion within the requested duration
-  for short windows (< 5 s) without throwing.
-- The two phases (`base` vs `burst`) are observable: a unit test instruments
-  the regime with a fake clock and asserts that the rate switch happens at
-  the expected boundary.
-- Unknown parameter keys are rejected at run time.
+- `HumongousPressureRegime` runs to completion within the requested
+  duration without throwing.
+- Unknown parameter keys are rejected.
+- `humongous_ratio` validation matches Rust (`(0.0, 1.0]`).
+
+CLI integration:
+- `humongous-g1-classic` preset, run for 12 s, produces a log containing
+  the substring `humongous` (lower-case) — emitted by the G1 logger when
+  humongous allocations occur.
 
 ## Doc sections to author (Doc-writer)
 
-- `doc/user/regimes.md` — fill the R2 section (parameters, defaults,
-  signature attendue, phenomena), drop the `_TODO iter 7_` marker.
-- `CHANGELOG.md` — Unreleased: R2 regime (Java + Rust), two presets,
-  integration test extension.
+- `doc/user/regimes.md` — fill the R3 section.
+- `CHANGELOG.md` — Unreleased: R3 regime (Java + Rust), two presets.
 
 ## Approval
 
-- Coder: A1 — frozen 2026-04-25
-- Reviewer: A2 — `Approved: A2 2026-04-25` (read against SPEC-FONCTIONNELLE §4.2; phase-switch semantics OK; `bursts_count` deferral approved).
+- Coder: A2 — frozen 2026-04-25
+- Reviewer: A3 — `Approved: A3 2026-04-25` (read against SPEC-FONCTIONNELLE §4.3; `humongous_size_kb: auto = 2 MiB` simplification noted as deliberate; ratio clamping OK).

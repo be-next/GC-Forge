@@ -95,7 +95,48 @@ when the regime parameters or invariants change.
 
 ## R3 — `humongous-pressure`
 
-_TODO iter 8._
+**Available since:** iteration 8.
+
+> A workload where a configurable fraction of allocations are large enough to
+> hit the JVM's "humongous" path (G1 region size or more). Used to demonstrate
+> humongous-allocation detection, mixed-GC triggering ahead of IHOP, and — at
+> high ratios — evacuation failure.
+
+### Parameters
+
+| Key                    | Type             | Default | Notes |
+|------------------------|------------------|---------|-------|
+| `humongous_ratio`      | float in `(0, 1]`| `0.5`   | Probability that a given allocation is humongous. |
+| `humongous_size_kb`    | integer or `auto`| `auto`  | Humongous chunk size. `auto` = 2 MiB, comfortably above G1's region size for any heap up to 32 GiB. |
+| `region_size_mb`       | integer (≥ 0)    | unset   | Informational; the JVM picks the actual region size. Forwarded to the harness for traceability. |
+| `allocation_rate_mb_s` | integer (≥ 0)    | `80`    | Mean allocation rate in MiB/s. |
+
+### Expected signature
+
+- ≥ 1 humongous allocation per second visible in the GC log.
+- G1 emits humongous-region accounting (`humongous regions: N`).
+- Mixed GC triggered ahead of IHOP because humongous allocations force the
+  marking cycle.
+- At `humongous_ratio > 0.7` on a tight heap, an evacuation failure becomes
+  expected.
+
+### Phenomena exhibited
+
+- `humongous_allocation`.
+- Optionally `evacuation_failure` (catalogued in the `evac-fail` preset).
+
+### Use cases
+
+- Demonstrating humongous detection, including the "small object batch
+  allocated in a row that becomes humongous when escape-analysed" pattern.
+- Stressing G1's region accounting under controlled pressure.
+
+### Shipped baselines
+
+- `presets/humongous-g1-classic.yaml` — G1, 2 GiB heap, ratio 0.5, mixed-GC
+  efficient. Reference scenario.
+- `presets/humongous-g1-evac-fail.yaml` — G1, 1 GiB heap, ratio 0.7,
+  evacuation failure expected.
 
 ## R4 — `slow-leak`
 

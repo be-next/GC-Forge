@@ -5,6 +5,71 @@ Maintained by the Teamlead role. See `doc/process/orchestration.md` for the proc
 
 ---
 
+## Iteration 8 — regime-humongous
+
+- **Started:** 2026-04-25
+- **Status:** merged
+- **Branch:** `iter/08-regime-humongous` (merged into `main`)
+- **Goal:** add R3 (`humongous-pressure`) on both sides, plus the two SPEC §8 presets `humongous-g1-classic` and `humongous-g1-evac-fail`. R3 is G1-specific in spirit (humongous regions are a G1 concept) but the harness still triggers them generically; the regime accepts ZGC/Parallel and just exhibits a different signature there. Refs: SPEC-FONCTIONNELLE §4.3.
+
+### Roles (this iteration)
+
+| Role | Agent | Note |
+|------|-------|------|
+| Teamlead   | A1 | was Coder in iter 7 |
+| Coder      | A2 | was Reviewer in iter 7 |
+| Reviewer   | A3 | was Tester-unit in iter 7 |
+| Tester-unit | A4 | was Tester-func in iter 7 |
+| Tester-func | A5 | was Doc-writer in iter 7 |
+| Doc-writer | A6 | was Teamlead in iter 7 |
+
+Rotation rule satisfied.
+
+### Plan
+
+1. Java `HumongousPressureRegime` registered in `RegimeRegistry`. Allocates a chunk every step; with probability `humongous_ratio` the chunk is `humongous_size_kb` KiB (default 2 MiB to ensure humongous on G1 with ≤ 32 GiB heaps), otherwise small (1 KiB).
+2. Rust `HumongousPressureRegime` + `HumongousPressureParams` typed view + `resolve()` registration.
+3. Two presets (catalog SPEC-FONC §8): `humongous-g1-classic` (G1, 2 GiB heap, 2 min, ratio 0.5) and `humongous-g1-evac-fail` (G1, 1 GiB heap, 2 min, ratio 0.7).
+4. Tests both sides; one Docker-gated CLI integration test running `humongous-g1-classic` for ~12 s and asserting `humongous` shows up in the produced log.
+
+### Decisions log
+
+- **`humongous_size_kb: auto` defaults to 2048 (2 MiB)** rather than `1.1 × region_size` from SPEC §4.3. The Java side cannot know the JVM-determined region size, and 2 MiB is comfortably above G1's region size for any heap up to 32 GiB (the largest in the MVP catalog is 4 GiB, so region is 2 MiB at most → 2 MiB exactly hits the humongous boundary). Documenting the simplification in `doc/user/regimes.md`.
+- **`humongous_ratio` clamped to (0.0, 1.0]**: the Rust parser rejects `0` (regime degenerates to steady-state) and `> 1.0` (impossible probability). Spec ranges are honoured (`(0, 1]`).
+- **Live-set cap** is `2 × humongous_size × ratio × allocation_rate` so a few humongous bunches can sit in old without forcing immediate evacuation, but bounded enough that the heap pressure is real.
+- **Both presets target G1** explicitly. ZGC/Parallel humongous behaviour is meaningful but interpreting it requires algorithm-aware invariants that arrive in iter 13. The R5 (cache-churn) and R7 (microservice) regimes will reintroduce algorithm contrast where it's productive.
+
+### Metrics (at merge)
+
+- Rust unit tests: 116/116 (11 new in `gc-forge-regimes::humongous_pressure`).
+- Java unit tests: 33/33 (7 new in `HumongousPressureRegimeTest`).
+- Docker integration tests (CLI, gated): 5/5 — three baselines + burst-G1 + humongous-G1-classic. Sequential run takes ~37 s.
+- `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`: clean.
+- `mvn verify`: green.
+- DoD-gate (phase 1): green.
+
+### Decisions taken in flight
+
+- **Image rebuild snag (again).** First run of the integration test failed because the runner image still had the iter-7 jar (no `humongous-pressure` registered). The Makefile's `$(HARNESS_JAR)` rule does not depend on the Java sources, so subsequent `make docker-image` invocations don't rebuild a stale jar. Worked around manually with `mvn -DskipTests package` then `docker build`. This is the second time it bites; logged as a soft TODO for iter 17 (release pipeline) where content-addressable image tags will fix it structurally. In the meantime the iteration test invocations should chain `mvn package && docker build` defensively.
+- **`humongous_size_kb: auto` = 2 MiB** (rather than `1.1 × region_size`) to keep the harness JVM-agnostic. Documented in `regimes.md` and the API-FREEZE rationale.
+- **`humongous_ratio` clamped to `(0, 1]`** with `0` rejected. Zero would degenerate to a steady-state-with-large-objects scenario; better to make callers choose one regime explicitly.
+- **`region_size_mb` accepted but informational**: it can't influence the JVM (which decides region sizing from heap size) but is forwarded to the harness CLI for traceability and future validators that want to know what the scenario expected.
+- **One integration test, not two**: the `evac-fail` preset's signature requires the JVM to actually fail — that's fragile under varying CPU pressure on the test machine. Keeping the `classic` preset under integration testing; the evac-fail preset will be exercised by the full `selftest` matrix in iter 15 with retries and tolerance budgets.
+
+### Bilan
+
+R3 lands cleanly through the same template R1/R2 use. The MVP regime catalogue is now half complete: R1 steady, R2 burst, R3 humongous-pressure done; R4 slow-leak, R5 cache-churn, R6 mixed-pathological, R7 microservice still to land. Each plug-in costs ~400 LoC of Rust + ~200 LoC of Java + 2 YAMLs + a dozen tests, and the scaffolding (orchestrator, runner, manifest, flag builder) absorbs them with zero changes.
+
+The `evac-fail` preset is a deliberately less reliable companion to `classic`: where `classic` should always exhibit humongous + mixed-GC, `evac-fail` deliberately overpressures the heap to force evacuation failures that are sensitive to CPU contention. Splitting them keeps the integration test stable and lets the full selftest matrix in iter 15 budget retries appropriately.
+
+Soft items deferred:
+1. **Stale-image discipline**: the `make docker-image` target should track Java source dependencies. Logged for iter 17 (release pipeline) which will replace dev-tag images with content-addressed `:sha256-…` tags built by CI.
+2. **Algorithm-specific humongous behaviour**: ZGC and Parallel handle large allocations differently; today the regime accepts those algos but the catalogue presets are G1-only. The `selftest` in iter 15 will introduce algorithm-aware tolerance, which is when ZGC/Parallel humongous variants become useful.
+
+Iteration 9 (`regime-cache-churn`, R5) follows next per the plan backbone (the plan reorders R4/R5/R6/R7 across iters 9-12: cache-churn, slow-leak, mixed-patho, microservice).
+
+---
+
 ## Iteration 7 — regime-burst
 
 - **Started:** 2026-04-25

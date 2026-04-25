@@ -7,6 +7,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ### Added
 
+- R3 `humongous-pressure` regime on both sides:
+    - `gc-forge-regimes::HumongousPressureRegime` + `HumongousPressureParams` with `humongous_ratio` (clamped to `(0, 1]`), `humongous_size_kb` (`auto` defaults to 2 MiB), optional `region_size_mb`, `allocation_rate_mb_s`. Registered in `resolve()`.
+    - `dev.gcforge.harness.regimes.HumongousPressureRegime` Java implementation that allocates `humongous_size_kb`-KiB chunks at the configured ratio. Registered in `RegimeRegistry`.
+- Two new presets: `presets/humongous-g1-classic.yaml` (G1, 2 GiB, ratio 0.5) and `presets/humongous-g1-evac-fail.yaml` (G1, 1 GiB, ratio 0.7, expects `evacuation_failure`).
+- Integration test `humongous_g1_preset_emits_humongous_marker` (gated on `docker-integration`) validating the produced GC log contains the `humongous` marker.
+- `doc/user/regimes.md` R3 section filled.
 - R2 `allocation-burst` regime on both sides:
     - `gc-forge-regimes::AllocationBurstRegime` + `AllocationBurstParams` with `base_rate_mb_s`, `burst_rate_mb_s`, `burst_duration_s`, `burst_period_s`, `bursts_count` (`auto` or fixed). Validates `burst_rate ≥ base_rate` and `0 < burst_duration ≤ burst_period`. Registered in `resolve()`.
     - `dev.gcforge.harness.regimes.AllocationBurstRegime` Java implementation that alternates per-second allocation budgets on the burst schedule. Registered in `RegimeRegistry`. Public `rateAt` helper for testing the schedule without allocating.
