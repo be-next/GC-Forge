@@ -57,7 +57,41 @@ when the regime parameters or invariants change.
 
 ## R2 — `allocation-burst`
 
-_TODO iter 7._
+**Available since:** iteration 7.
+
+> A workload that alternates between a baseline allocation rate and a higher
+> burst rate on a fixed cadence. Used to demonstrate young-GC frequency that
+> pulses in step with traffic without falling into evacuation failures.
+
+### Parameters
+
+| Key                | Type           | Default | Notes |
+|--------------------|----------------|---------|-------|
+| `base_rate_mb_s`   | integer (≥ 0)  | `30`    | Allocation rate outside burst windows. |
+| `burst_rate_mb_s`  | integer (≥ 0)  | `200`   | Allocation rate during a burst. Must be ≥ `base_rate_mb_s`. |
+| `burst_duration_s` | integer (> 0)  | `5`     | Length of each burst window. Must be ≤ `burst_period_s`. |
+| `burst_period_s`   | integer (> 0)  | `30`    | Cadence of the burst schedule (one window per period). |
+| `bursts_count`     | integer or `auto` | `auto` | Reserved; today the burst count is derived from the run duration. |
+
+### Expected signature
+
+- Young-GC frequency pulses with the burst cadence (visible on a frequency-vs-time tracé).
+- After a burst exits, frequency falls back to baseline within ~ 2× `burst_duration_s`.
+- No evacuation failure on the canonical preset (G1, 2 GiB heap, 200 MiB/s burst).
+
+### Phenomena exhibited
+
+- `allocation_burst`.
+
+### Use cases
+
+- Demonstrating burst-detection in GC-Insight, with a clear ground-truth schedule.
+- Stress-testing a heap dimension against a known burst envelope.
+
+### Shipped baselines
+
+- `presets/burst-g1-30s.yaml` — G1, 2 GiB heap, 5 min duration, 30 s burst period.
+- `presets/burst-parallel-30s.yaml` — Parallel collector, same schedule (extends the G1 preset).
 
 ## R3 — `humongous-pressure`
 

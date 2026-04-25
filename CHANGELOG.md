@@ -7,6 +7,12 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ### Added
 
+- R2 `allocation-burst` regime on both sides:
+    - `gc-forge-regimes::AllocationBurstRegime` + `AllocationBurstParams` with `base_rate_mb_s`, `burst_rate_mb_s`, `burst_duration_s`, `burst_period_s`, `bursts_count` (`auto` or fixed). Validates `burst_rate ≥ base_rate` and `0 < burst_duration ≤ burst_period`. Registered in `resolve()`.
+    - `dev.gcforge.harness.regimes.AllocationBurstRegime` Java implementation that alternates per-second allocation budgets on the burst schedule. Registered in `RegimeRegistry`. Public `rateAt` helper for testing the schedule without allocating.
+- Two new presets: `presets/burst-g1-30s.yaml` (G1) and `presets/burst-parallel-30s.yaml` (Parallel, extends G1). Both 5-minute scenarios with a 5 s burst every 30 s, baseline 30 MiB/s, burst 200 MiB/s.
+- `doc/user/regimes.md` R2 section filled (parameters, signature, phenomena, baselines).
+- New CLI integration test `burst_g1_preset_runs_through_pipeline` (gated on `docker-integration`) running the burst preset for 12 s and asserting at least one Pause Young in the produced GC log.
 - Two new presets: `presets/steady-zgc-baseline.yaml` (generational ZGC) and `presets/steady-parallel-baseline.yaml` (Parallel collector). Both `extends: steady-g1-baseline.yaml` and override only `spec.gc.algorithm`, so R1's regime parameters and expected invariants stay in lock-step across all three MVP algorithms.
 - New CLI integration test (`crates/gc-forge-cli/tests/three_algos.rs`, gated on `docker-integration`) that runs all three baselines through `gc-forge run` and asserts the algorithm-specific marker shows up in each GC log (`Using G1` / `Using ZGC` / `Using Parallel`). Surface that the `--embedded-harness` flow does not require a host `harness.jar`.
 

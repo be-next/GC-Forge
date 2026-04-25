@@ -5,6 +5,71 @@ Maintained by the Teamlead role. See `doc/process/orchestration.md` for the proc
 
 ---
 
+## Iteration 7 — regime-burst
+
+- **Started:** 2026-04-25
+- **Status:** merged
+- **Branch:** `iter/07-regime-burst` (merged into `main`)
+- **Goal:** add R2 (`allocation-burst`) on both sides of the language boundary, plus the `burst-g1-30s` and `burst-parallel-30s` presets. Refs: SPEC-FONCTIONNELLE §4.2.
+
+### Roles (this iteration)
+
+| Role | Agent | Note |
+|------|-------|------|
+| Teamlead   | A6 | was Coder in iter 6 |
+| Coder      | A1 | was Reviewer in iter 6 |
+| Reviewer   | A2 | was Tester-unit in iter 6 |
+| Tester-unit | A3 | was Tester-func in iter 6 |
+| Tester-func | A4 | was Doc-writer in iter 6 |
+| Doc-writer | A5 | was Teamlead in iter 6 |
+
+Rotation rule satisfied.
+
+### Plan
+
+Mirrors iter 4's R1 shape:
+
+1. Java `AllocationBurstRegime` registered in `RegimeRegistry`. Alternates between `base_rate_mb_s` and `burst_rate_mb_s` on a `(burst_duration_s, burst_period_s)` schedule. Re-uses `ChunkSizer` in `MIXED` mode and the same FIFO live-set retention as steady-state.
+2. Rust `AllocationBurstRegime` + `AllocationBurstParams` typed view + `resolve()` registration.
+3. Two presets: `burst-g1-30s` and `burst-parallel-30s` (5-min duration each per SPEC §8 catalogue; integration tests use a 12 s override that captures one full burst window).
+4. Tests both sides; integration test extension.
+
+### Decisions log
+
+- **Rate limiter shape**: kept the per-second budget approach from R1's `SteadyStateRegime` rather than a token-bucket. The burst regime simply swaps the per-second budget on a phase boundary. Simpler, deterministic at fixed seed, and good enough to produce visible pulses in the GC log.
+- **`bursts_count` parameter** (defaults to "auto = duration / period"): not exposed in iter 7. The Java side derives it from the loop's wall-clock; the Rust parameter parser accepts the key but always passes `auto`. Explicit count is iter 14 territory (batch + sweep semantics) where it's actually needed.
+- **Single integration test** (G1 burst preset only). The orchestrator and runner are already proven by iter 6's three-algo set; one Burst preset run is enough to validate that the new harness regime is wired in. The Parallel-burst preset gets covered by the full `selftest` matrix in iter 15.
+
+### Metrics (at merge)
+
+- Rust unit tests: 105/105 (12 new in `gc-forge-regimes::allocation_burst`).
+- Java unit tests: 26/26 (8 new in `AllocationBurstRegimeTest`).
+- Docker integration tests (CLI, gated): 4/4 — three baselines + new burst-G1.
+- `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`: clean.
+- `mvn verify`: green.
+- DoD-gate (phase 1): green.
+
+### Decisions taken in flight
+
+- **`BurstsCount` enum** (`Auto | Fixed(u32)`) rather than `Option<u32>`: the YAML form `bursts_count: auto` is more explicit than letting users pass `null`, and serde's `untagged` makes the conversion clean. The `as_arg()` helper converts back to the Java-side `auto` keyword.
+- **Validation centralised in `validate()`** (called at the end of `from_yaml`) so that ordering of fields in the YAML doesn't change which error fires. Otherwise a malformed `burst_period_s` followed by a malformed `burst_duration_s` could surface either error depending on YAML order.
+- **`rateAt` exposed as a `public static` test helper** in the Java regime: the unit test asserts the schedule at multiple points without spinning up the loop, keeping the test fast and deterministic. This pattern will be reused for the next regimes' time-varying parameters.
+- **Burst test uses 12 s**: wide enough to capture the 5 s burst plus the start of the recovery phase, narrow enough to stay under the existing 14-s aggregate test budget.
+
+### Bilan
+
+R2 lands cleanly with the same Java/Rust mirroring as R1 in iter 4. The orchestrator and runner stayed entirely unchanged, exactly as the iter-5 design predicted: every regime now plugs into the existing pipeline by adding (i) a Java class registered in `RegimeRegistry`, (ii) a Rust struct registered in `resolve()`, and (iii) one or two YAML presets. Five more regimes (R3–R7) follow the same template through iters 8–12.
+
+The CLI integration test set now covers four scenarios (three baselines + one burst) with the same gating mechanism. Total Docker test budget per CI run is ~30 s sequential — still tractable. The test harness's `run_baseline` helper makes adding a fifth or sixth case a one-line affair.
+
+Soft items deferred:
+1. **Burst recovery invariant verification**: the `post_burst_recovery_within_2x_burst_duration` rule is declared in the regime's `expected_invariant_rules` and surfaces in the manifest, but enforcement waits for iter 13's parsed-log validator. Today it's documentation, tomorrow it's a green/red bit in the manifest's `validation` block.
+2. **`bursts_count` honoured by Java**: today the Java side derives the count from wall-clock duration regardless. Honouring an explicit count requires a small refactor in the regime's main loop; deferred until iter 14 (`batch`) where sweep semantics actually need it.
+
+Iteration 8 (`regime-humongous`, R3) follows next.
+
+---
+
 ## Iteration 6 — algos-zgc-parallel
 
 - **Started:** 2026-04-25
