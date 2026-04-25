@@ -1,0 +1,21 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+extends: cache-g1-churn.yaml
+
+metadata:
+  name: cache-parallel-churn
+  version: 1.0.0
+  description: |
+    R5 — cache-churn on Parallel. Same workload as `cache-g1-churn`, on the
+    throughput-oriented Parallel collector. Useful contrast with G1 around
+    promotion handling and mixed-GC behaviour.
+  tags: [mvp, cache, churn, parallel]
+
+spec:
+  gc:
+    algorithm: Parallel
+    options:
+      heap:
+        min: 4g
+        max: 4g

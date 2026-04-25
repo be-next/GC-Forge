@@ -1,0 +1,46 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+metadata:
+  name: cache-g1-churn
+  version: 1.0.0
+  description: |
+    R5 — cache-churn on G1. A bounded 500 MiB FIFO cache with 1000 evictions
+    per second and 2 s entry lifetime. Drives a sustained promotion rate
+    young → old, exercising mixed GCs that reclaim modest but regular
+    fractions of the heap. Distinguishes the "bounded cache" signature
+    from a slow leak (unbounded growth).
+  tags: [mvp, cache, churn, g1]
+  authors: ["GC-Forge MVP"]
+
+spec:
+  jvm:
+    vendor: temurin
+    major: 21
+
+  gc:
+    algorithm: G1
+    options:
+      heap:
+        min: 4g
+        max: 4g
+
+  regime:
+    kind: cache-churn
+    parameters:
+      cache_size_mb: 500
+      eviction_rate_per_s: 1000
+      entry_lifetime_ms: 2000
+      entry_size_kb: 8
+
+  duration: 5m
+  warmup: 10s
+  seed: 0xC0FFEE
+
+  expected:
+    phenomena:
+      - promotion_pressure
+    invariants:
+      - { rule: "promotion_rate_pct >= 30",                threshold: 30 }
+      - { rule: "old_gen_oscillates_within_cache_band",    threshold: true }
+      - { rule: "mixed_gc_regular",                        threshold: true }

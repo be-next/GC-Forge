@@ -7,6 +7,7 @@ use thiserror::Error;
 use gc_forge_scenario::{RegimeSpec, Scenario};
 
 use crate::allocation_burst::AllocationBurstRegime;
+use crate::cache_churn::CacheChurnRegime;
 use crate::humongous_pressure::HumongousPressureRegime;
 use crate::steady_state::SteadyStateRegime;
 
@@ -78,6 +79,7 @@ pub fn resolve(spec: &RegimeSpec) -> Result<Box<dyn Regime>, RegimeError> {
         "steady-state-healthy" => Ok(Box::new(SteadyStateRegime)),
         "allocation-burst" => Ok(Box::new(AllocationBurstRegime)),
         "humongous-pressure" => Ok(Box::new(HumongousPressureRegime)),
+        "cache-churn" => Ok(Box::new(CacheChurnRegime)),
         other => Err(RegimeError::UnknownKind(other.to_owned())),
     }
 }

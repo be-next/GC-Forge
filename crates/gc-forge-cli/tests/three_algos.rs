@@ -128,6 +128,41 @@ fn parallel_baseline_emits_using_parallel() {
 }
 
 #[test]
+fn cache_g1_preset_runs_and_produces_log() {
+    // R5 (cache-churn): we assert the regime is registered and the
+    // pipeline produces a GC log starting with the G1 init banner. Behavioural
+    // invariants (≥ 30 % promotion, etc.) are the validator's job (iter 13);
+    // a 12-second integration run on a 4 GiB heap is too short to be
+    // representative of the spec's signature.
+    let root = workspace_root();
+    let preset = root.join("presets/cache-g1-churn.yaml");
+    let dir = tempdir().unwrap();
+    let status = Command::new(cli_bin())
+        .args([
+            "run",
+            preset.to_str().unwrap(),
+            "--out-dir",
+            dir.path().to_str().unwrap(),
+            "--image",
+            RUNNER_IMAGE,
+            "--embedded-harness",
+            HARNESS_IN_IMAGE,
+            "--override",
+            "spec.duration=12s",
+        ])
+        .status()
+        .expect("failed to invoke gc-forge");
+    assert!(status.success(), "gc-forge run failed for cache-g1-churn");
+    let log = locate_log(dir.path()).expect("cache-g1 log produced");
+    let body = std::fs::read_to_string(&log).unwrap();
+    assert!(body.contains("Using G1"), "G1 marker missing");
+    assert!(
+        body.contains("Heap Region Size"),
+        "Heap Region Size missing"
+    );
+}
+
+#[test]
 fn humongous_g1_preset_emits_humongous_marker() {
     let root = workspace_root();
     let preset = root.join("presets/humongous-g1-classic.yaml");
