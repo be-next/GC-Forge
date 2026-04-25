@@ -16,5 +16,14 @@ thiserror = { workspace = true }
 tracing   = { workspace = true }
 gc-forge-scenario = { workspace = true }
 
+[dev-dependencies]
+tempfile = "3.13"
+
+[features]
+# When enabled, the integration tests that actually launch Docker run.
+# Off by default so contributors without Docker still get a green
+# `cargo test`. CI flips this on.
+docker-integration = []
+
 [lints]
 workspace = true

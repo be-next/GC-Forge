@@ -240,6 +240,7 @@ version = "0.0.1-dev"
 dependencies = [
  "anyhow",
  "gc-forge-scenario",
+ "tempfile",
  "thiserror",
  "tracing",
 ]

@@ -32,6 +32,10 @@ test: ## Run Rust + Java unit tests
 	$(CARGO) test --workspace
 	$(MVN) -f workload-harness/pom.xml -q test
 
+.PHONY: docker-integration-tests
+docker-integration-tests: docker-image $(HARNESS_JAR) ## Run runner integration tests that actually launch Docker
+	$(CARGO) test -p gc-forge-runner --features docker-integration
+
 .PHONY: lint
 lint: ## fmt-check, clippy, cargo-deny
 	$(CARGO) fmt --all -- --check
