@@ -1,50 +1,36 @@
-# API freeze — iteration 2 (scenario-parser)
+# API freeze — iteration 3 (docker-runner-mvp)
 
 Gate 1 artifact. Overwritten at every iteration before parallel work starts.
 
 ## Scope
 
-Iteration 2 lands the `gc-forge-scenario` crate's first real API: types modelling
-the `gc-forge/scenario.v1` YAML schema, a loader that resolves `extends:`
-chains and applies CLI overrides, JSON Schema generation, and the
-`gc-forge lint` subcommand wiring.
+The `gc-forge-runner` crate gains its first real API: a `Runner` trait, the
+`DockerRunner` backend, and the function that translates a resolved
+`Scenario` into a JVM command line. No CLI subcommand wiring this iteration —
+that lands with `gc-forge run` in iter 5.
 
 ## Public Rust surface added
 
-### Crate `gc-forge-scenario`
+### Crate `gc-forge-runner`
 
 | Item | Kind | Notes |
 |------|------|-------|
-| `Scenario`                                          | struct | top-level scenario, deserialised from YAML |
-| `Metadata`                                          | struct | `name`, `version`, `description`, `tags`, `authors` |
-| `Spec`                                              | struct | top-level spec block |
-| `JvmSpec`                                           | struct | `vendor`, `major`, `distribution`, `extra_flags` |
-| `JvmVendor`                                         | enum   | `Temurin` (MVP); other variants present but flagged unsupported |
-| `Distribution`                                      | enum   | `Jdk`, `Jre` |
-| `GcSpec`                                            | struct | `algorithm`, `options`, `extra_flags`, `log_format` |
-| `GcAlgorithm`                                       | enum   | `G1`, `Zgc`, `Parallel` (MVP) |
-| `GcOptions`                                         | struct | `generational`, `heap`, `pause_target_ms`, `region_size_mb`, `ihop_percent` |
-| `HeapConfig`                                        | struct | `min`, `max`, `new_size` (all `ByteSize`) |
-| `ByteSize`                                          | struct | parses `"2g"`, `"512m"`, `"1024k"`, raw bytes |
-| `LogFormat`                                         | enum   | `Unified`, `Legacy` |
-| `RegimeSpec`                                        | struct | `kind`, `parameters` (free-form `serde_yaml::Value`) |
-| `OutputSpec`                                        | struct | `log_path`, `manifest_path`, `capture_jfr` |
-| `ExpectedClause`                                    | struct | `phenomena: Vec<String>`, `invariants: Vec<InvariantRule>` |
-| `InvariantRule`                                     | struct | `rule: String`, `threshold: serde_yaml::Value` |
-| `Duration` (re-export of `humantime_serde`-flavoured) | type alias | parses `"90s"`, `"5m"` |
-| `Scenario::from_path(&Path)`                        | fn     | load + apiVersion check (no extends/override yet) |
-| `Scenario::resolve(base_dir: &Path)`                | fn     | follows `extends:` chains and merges |
-| `Scenario::apply_overrides(&[Override])`            | fn     | applies dotted-path overrides on the resolved scenario |
-| `Override::parse(&str)`                             | fn     | parses `"a.b.c=value"` |
-| `ScenarioError`                                     | enum (thiserror) | `Io`, `Yaml`, `UnsupportedApiVersion`, `Cycle`, `MissingField`, `InvalidOverride`, … |
-| `JSON_SCHEMA: &str`                                 | const  | the JSON Schema as embedded string (built from schemars) |
-| `bin gen-schema`                                    | bin    | regenerates `schemas/scenario-v1.json` |
+| `Runner`                        | trait  | `name`, `check_available`, `execute` |
+| `RunSpec`                       | struct | resolved scenario + log path + harness jar + workload args + (optional) cpu/memory limits |
+| `RunOutcome`                    | struct | log path, exit status, started_at, ended_at, jvm version, image used |
+| `ExitStatus`                    | enum   | `Success`, `Failure(i32)`, `Oom`, `Timeout`, `Signal(i32)` |
+| `RunnerError`                   | enum (thiserror) | `NotAvailable`, `Spawn`, `LogCapture`, `Wait`, `Timeout`, `Other` |
+| `DockerRunner`                  | struct | the iter-3 backend |
+| `DockerRunner::new`             | fn     | builder with sensible defaults |
+| `DockerRunner::with_image`      | fn     | override the image tag |
+| `DockerRunner::with_cpus(f64)`  | fn     | optional `--cpus` |
+| `DockerRunner::with_memory(ByteSize)` | fn | optional `--memory` |
+| `flags::build_jvm_command(&Scenario, &Path)` | fn | pure function → `Vec<String>` |
+| `flags::log_decorators()`       | fn (const) | the standardised `-Xlog` decorator string |
 
 ### Crate `gc-forge-cli`
 
-| Item | Kind | Notes |
-|------|------|-------|
-| `lint` subcommand | clap subcommand | `gc-forge lint <path>` — load + extends, no execute |
+No change this iteration.
 
 ## Java harness public surface
 
@@ -52,28 +38,34 @@ No change.
 
 ## YAML schema changes
 
-This is where the schema lands. Reference: SPEC-FONCTIONNELLE §5.1. The
-`apiVersion: gc-forge/scenario.v1` and `kind: Scenario` are required. Optional
-top-level `extends: <relative-path>`.
+None.
 
 ## Invariants for Tester-unit
 
-- A minimal valid scenario (apiVersion + kind + spec.jvm/gc/regime + duration + seed) parses.
-- Missing `apiVersion` fails with a typed error.
-- An unknown `gc.algorithm` fails at deserialisation (not at validation time).
-- `extends:` resolves a single level, multi-level chain, and detects a cycle.
-- Overrides on nested paths (e.g. `spec.gc.options.heap.max=4g`) succeed.
-- An override with an unknown path fails with a typed error.
-- The on-disk JSON schema matches a fresh regeneration (drift detection).
-- `gc-forge lint <good.yaml>` exits 0, `gc-forge lint <bad.yaml>` exits non-zero with a clear message.
+- `flags::build_jvm_command` produces `-XX:+UseG1GC` for `algorithm: G1`,
+  `-XX:+UseZGC -XX:+ZGenerational` for `ZGC` with `generational != Some(false)`,
+  `-XX:+UseParallelGC` for `Parallel`.
+- The `-Xlog` flag is always emitted with the canonical decorator set.
+- `-Xms` and `-Xmx` are always emitted, in that order, in JVM-style suffix
+  form (matching `ByteSize::Display`).
+- G1-specific knobs (`MaxGCPauseMillis`, `G1HeapRegionSize`, `IHOP`) are emitted
+  only when the algorithm is G1 *and* the field is `Some`.
+- `extra_flags` (jvm and gc) are appended after the standard flags, in
+  declaration order, without de-duplication.
+- `DockerRunner::check_available` returns `Ok(())` when `docker version` exits 0.
+- The runner returns `RunnerError::NotAvailable` (not `Spawn`) when Docker
+  itself is missing.
+- Argv construction includes `--rm`, `--network=none`, and the mounts for
+  `<out_dir>:/work` and `<harness_jar>:/work/harness.jar:ro`.
 
 ## Doc sections to author (Doc-writer)
 
-- `doc/user/scenario-reference.md` — full YAML schema reference, one section per top-level field.
-- `CHANGELOG.md` — `Unreleased` section: scenario types, loader, extends, overrides, JSON Schema, lint subcommand.
-- Update `doc/user/getting-started.md` "First scenario" placeholder if a sensible step can land now (probably keep TODO until iter 5).
+- `doc/user/cli-reference.md` — initial skeleton with the future `gc-forge run`
+  options that surface today's runner flags (`--image`, `--docker-cpus`,
+  `--docker-memory`). Marked `_TODO iter 5_` for the run subcommand body.
+- `CHANGELOG.md` — `Unreleased`: Runner trait, DockerRunner, flag builder.
 
 ## Approval
 
-- Coder: A2 — frozen 2026-04-25
-- Reviewer: A3 — `Approved: A3 2026-04-25` (signed after a read-through of the public surface against SPEC-FONCTIONNELLE §5; no red flag).
+- Coder: A3 — frozen 2026-04-25
+- Reviewer: A4 — `Approved: A4 2026-04-25` (read against SPEC-TECHNIQUE §4.5 and §6.1; runtime-gated integration test approved over `#[ignore]`).

@@ -5,6 +5,76 @@ Maintained by the Teamlead role. See `doc/process/orchestration.md` for the proc
 
 ---
 
+## Iteration 3 — docker-runner-mvp
+
+- **Started:** 2026-04-25
+- **Status:** merged
+- **Branch:** `iter/03-docker-runner-mvp` (merged into `main`)
+- **Goal:** stand up the JVM orchestration layer — `Runner` trait, `DockerRunner` backend, and the JVM flag builder that turns a `Scenario` into a `java …` command line. Refs: SPEC-TECHNIQUE §4.5 and §6.1.
+
+### Roles (this iteration)
+
+| Role | Agent | Note |
+|------|-------|------|
+| Teamlead   | A2 | was Coder in iter 2 |
+| Coder      | A3 | was Reviewer in iter 2 |
+| Reviewer   | A4 | was Tester-unit in iter 2 |
+| Tester-unit | A5 | was Tester-func in iter 2 |
+| Tester-func | A6 | was Doc-writer in iter 2 |
+| Doc-writer | A1 | was Teamlead in iter 2 |
+
+Rotation rule satisfied.
+
+### Plan
+
+1. Define the `Runner` trait + `RunSpec` + `RunOutcome` + `RunnerError`.
+2. Build the JVM flag translator (pure function `Scenario → Vec<String>`).
+3. Implement `DockerRunner` (subprocess management, `docker run`, log capture, `java -version` probe).
+4. Tests: heavy unit coverage on the flag builder; argv-construction tests for the runner; one integration test that actually launches Docker (gated to skip if Docker is absent).
+5. Doc + CHANGELOG.
+
+### Decisions log
+
+- The Runner trait stays minimal at iter 3 (`check_available` + `execute`); `ensure_jvm` mentioned in SPEC §4.5 lands in iter 18+ for the native runner — Docker images don't need it.
+- The integration test is **runtime-gated** rather than `#[ignore]` so contributors without Docker still get a green `cargo test`. The DoD gate script invokes a separate `make` target for Docker integration tests.
+- Per SPEC §6.1, the unified `-Xlog` shape is hard-coded for now (`gc*=info,gc+heap=debug,gc+age=trace,gc+phases=debug,gc+humongous=trace:file=<path>:time,level,tags,pid,tid:filecount=0`). Algo-specific tags (e.g. ZGC's `relocation`, `marking`) land alongside their algorithm presets in iter 6.
+- Image tag policy: `eclipse-temurin:<major>-jdk-jammy` is the default; the `--image` runner option lets callers override (used by the corpus regen pipeline of GC-Insight to pin a known SHA).
+
+### Metrics (at merge)
+
+- Rust unit tests: 64/64 passed across the workspace (37 scenario + 23 runner + 4 placeholder version + 1 doctest, 1 CLI smoke).
+- Java unit tests: 2/2 passed (unchanged).
+- Docker integration test: 1/1 passed locally against `gc-forge-runner:dev-jdk21` (3.3 s wall-clock for a 3 s G1 scenario).
+- `cargo fmt --check`, `cargo clippy --workspace --all-targets -- -D warnings`: clean.
+- `mvn verify`: green.
+- DoD-gate (phase 1): green.
+
+### Decisions taken in flight
+
+- **`--entrypoint=java` is forced** by `DockerRunner` regardless of image. Discovered when running against `gc-forge-runner:dev-jdk21` (whose Dockerfile has `ENTRYPOINT ["java"]`): the assembled `java <flags> …` argument list landed *after* the entrypoint, producing `java java <flags>` and a `Could not find or load main class java` error. Forcing `--entrypoint=java` makes the runner image-agnostic and the produced command line equally readable in either image variant.
+- **Embedded-harness mode** (`with_embedded_harness`): added as a first-class option. Production runner images (`gc-forge-runner:*-jdk*`) bake the harness at `/opt/gc-forge/harness.jar`; in that mode the host jar mount is dropped. This also sidesteps Docker Desktop on macOS struggling with overlapping bind mounts of host paths in different filesystems (encountered while writing the integration test with a `tempdir()`-mounted log directory).
+- **Integration test gating**: feature-flag (`docker-integration`) over `#[ignore]`. Reason: contributors without Docker still get a green default `cargo test`, and `make docker-integration-tests` builds the image and harness jar before invoking the gated tests — so the dependency is explicit, not "works on my machine".
+- **Probe before run**: a separate `docker run … java -version` invocation captures the JVM's full version string (e.g. `openjdk version "21.0.10" 2026-…`) for the manifest. The probe is best-effort: if it fails, `RunOutcome::jvm_version` is `None` and the actual run still proceeds.
+- **Exit code 137 maps to `ExitStatus::Oom`**: Docker's OOM killer signals SIGKILL which translates to 128+9=137 on Linux. Treating this as `Oom` rather than `Failure(137)` makes downstream policy clearer.
+
+### Bilan
+
+The runner stack is the spine of every subsequent iteration: starting iter 4, every regime will pipe through `RunSpec → DockerRunner::execute → RunOutcome → log file on disk`. Today's implementation gives that spine a clean separation:
+
+- the **flag builder** is a pure function (no I/O, 8 dedicated unit tests) so changing JVM defaults later is safe;
+- the **Docker argv builder** is also pure (10 unit tests) so we can add corpus-pinned images, sandbox policies, or non-Docker backends without rewriting the run loop;
+- the **Runner trait** is only two methods, leaving room for a `NativeRunner` in iter 18+ without surface churn.
+
+The `--entrypoint` and embedded-harness fixes were both surfaced by *running real Docker*, which validates the choice of feature-gated integration tests over more-elaborate mocking. Both fixes are documented and tested.
+
+Two soft items deferred:
+1. **Wall-clock timeout** is declared in `RunnerError::Timeout` but not yet enforced — `Command::status()` blocks indefinitely. A timeout wrapper lands in iter 5 (`run-end-to-end`) where the CLI flag exists.
+2. **JFR capture** (`output.capture_jfr`) is parsed but ignored by the runner. The flag will be wired in V1 per SPEC-FONCTIONNELLE §6.
+
+Iteration 4 (`harness-steady-state`) can start: the runner takes a scenario today and produces a 3 s G1 GC log against Temurin 21 with 18+ events. Wiring the typed steady-state regime is the next link.
+
+---
+
 ## Iteration 2 — scenario-parser
 
 - **Started:** 2026-04-25

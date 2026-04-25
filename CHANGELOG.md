@@ -7,6 +7,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ### Added
 
+- `gc-forge-runner`: `Runner` trait with `check_available` + `execute`, `RunSpec`/`RunOutcome`/`ExitStatus`/`RunnerError` types.
+- `gc-forge-runner::DockerRunner`: Docker-backed runner. Supports image override, embedded-harness mode (skips the host jar mount when the image bakes the harness), `--cpus` and `--memory` limits. Always passes `--rm --network=none --entrypoint=java` for reproducibility and security.
+- `gc-forge-runner::flags::build_jvm_command`: pure translation of a resolved `Scenario` into a JVM argv. Implements the unified `-Xlog` shape mandated by SPEC-TECHNIQUE §6.1, plus the algorithm flag (`G1`/`ZGC[+ZGenerational]`/`Parallel`) and the per-algorithm tunables.
+- 23 unit tests covering the flag builder and Docker argv construction; one integration test (gated on the `docker-integration` feature) that actually launches Docker against a 256 MB G1 scenario and asserts a parseable GC log.
+- `doc/user/cli-reference.md`: CLI reference skeleton with the `lint` subcommand documented and TODO markers for the upcoming subcommands.
 - `gc-forge-scenario`: typed model of `gc-forge/scenario.v1` (`Scenario`, `Spec`, `JvmSpec`, `GcSpec`, `HeapConfig`, `RegimeSpec`, …) with `serde`, `schemars`, and `thiserror`. `ByteSize` and `Duration` accept the JVM-style suffix forms.
 - `Scenario::from_path` / `Scenario::resolve` — load a scenario file, with `extends:` chain resolution (deep merge, sequence replacement, cycle detection).
 - `Override::parse` and `Scenario::apply_overrides` — `KEY=VALUE` overrides on dotted paths, applied after `extends:` resolution. Schema-breaking overrides are rejected.
