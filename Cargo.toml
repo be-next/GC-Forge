@@ -1,0 +1,60 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/gc-forge-cli",
+    "crates/gc-forge-scenario",
+    "crates/gc-forge-regimes",
+    "crates/gc-forge-runner",
+    "crates/gc-forge-validate",
+    "crates/gc-forge-presets",
+]
+
+[workspace.package]
+version = "0.0.1-dev"
+edition = "2021"
+rust-version = "1.94"
+authors = ["Jérôme Ramette"]
+license = "MIT"
+repository = "https://github.com/jerome-ramette/gc-forge"
+homepage = "https://github.com/jerome-ramette/gc-forge"
+readme = "README.md"
+keywords = ["jvm", "gc", "garbage-collection", "log", "testing"]
+categories = ["development-tools", "command-line-utilities"]
+
+[workspace.dependencies]
+# Internal crates — referenced via path within the workspace
+gc-forge-scenario = { path = "crates/gc-forge-scenario", version = "0.0.1-dev" }
+gc-forge-regimes  = { path = "crates/gc-forge-regimes",  version = "0.0.1-dev" }
+gc-forge-runner   = { path = "crates/gc-forge-runner",   version = "0.0.1-dev" }
+gc-forge-validate = { path = "crates/gc-forge-validate", version = "0.0.1-dev" }
+gc-forge-presets  = { path = "crates/gc-forge-presets",  version = "0.0.1-dev" }
+
+# Common third-party dependencies (versions pinned at workspace level so all
+# crates use the same; pulled in only by the crates that need them).
+anyhow      = "1.0"
+thiserror   = "1.0"
+clap        = { version = "4.5", features = ["derive"] }
+serde       = { version = "1.0", features = ["derive"] }
+serde_json  = "1.0"
+serde_yaml  = "0.9"
+schemars    = "0.8"
+tracing     = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter"] }
+sha2        = "0.10"
+uuid        = { version = "1.10", features = ["v7"] }
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+missing_docs = "warn"
+
+[workspace.lints.clippy]
+pedantic = { level = "warn", priority = -1 }
+# `nursery` re-evaluated when the codebase is large enough to benefit from
+# speculative API hints — tracked in the iteration backlog.
+module_name_repetitions = "allow"
+must_use_candidate = "allow"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+strip = "symbols"

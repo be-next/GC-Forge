@@ -3,3 +3,39 @@
 
 # Claude Code local instructions
 CLAUDE.md
+
+# Rust
+target/
+**/target/
+**/*.rs.bk
+Cargo.lock.bak
+
+# Java / Maven
+workload-harness/target/
+*.class
+*.jar
+
+# IDE
+.idea/
+.vscode/
+*.iml
+*.swp
+
+# Output (run artifacts)
+out/
+*.log
+!doc/**/*.log
+
+# Coverage reports
+**/coverage/
+**/jacoco-report/
+**/llvm-cov/
+*.profraw
+*.profdata
+
+# Local dev
+.env
+.envrc
+
+# API-FREEZE is per-iteration scratch, regenerated each time — keep tracked
+# but tolerate uncommitted scratch in build dirs above.

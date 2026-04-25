@@ -1,0 +1,20 @@
+[package]
+name = "gc-forge-runner"
+description = "JVM orchestration for GC-Forge (Docker MVP, native runner V1)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+
+[dependencies]
+anyhow    = { workspace = true }
+thiserror = { workspace = true }
+tracing   = { workspace = true }
+gc-forge-scenario = { workspace = true }
+
+[lints]
+workspace = true

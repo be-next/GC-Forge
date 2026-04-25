@@ -1,0 +1,19 @@
+[package]
+name = "gc-forge-regimes"
+description = "Application regimes for GC-Forge (steady-state, allocation-burst, humongous-pressure, ...)."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+readme.workspace = true
+
+[dependencies]
+serde     = { workspace = true }
+thiserror = { workspace = true }
+gc-forge-scenario = { workspace = true }
+
+[lints]
+workspace = true
