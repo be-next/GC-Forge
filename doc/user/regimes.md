@@ -47,16 +47,37 @@ Unknown keys are rejected at scenario resolution time.
 
 ### Shipped presets
 
-R1 ships with one preset per MVP collector, all extending the
+R1 ships with one preset per supported collector, all extending the
 canonical YAML:
 
 - `presets/steady-g1-baseline.yaml` — G1 (default).
-- `presets/steady-zgc-baseline.yaml` — generational ZGC.
+- `presets/steady-zgc-baseline.yaml` — ZGC, generational mode.
+- `presets/steady-zgc-nongen-baseline.yaml` — ZGC, non-generational
+  mode (`-XX:-ZGenerational`); companion to the generational
+  variant.
 - `presets/steady-parallel-baseline.yaml` — Parallel.
+- `presets/steady-shenandoah-baseline.yaml` — Shenandoah.
+- `presets/steady-serial-baseline.yaml` — Serial. Heap is sized at
+  256 MiB to match Serial's typical deployment envelope.
 
-The three presets differ only in `spec.gc.algorithm`; `extends:`
-keeps them in lock-step when the regime parameters or invariants
-change.
+The presets differ only in `spec.gc.algorithm` (and, for the Serial
+variant, in heap size); `extends:` keeps them in lock-step when the
+regime parameters or invariants change.
+
+### Negative baseline (Epsilon)
+
+The Epsilon (no-op) GC ships with two presets that exercise R1 and
+R4 without any collector activity:
+
+- `presets/epsilon-baseline.yaml` — R1 sized so total allocations
+  stay below the heap budget. The log records initialisation lines
+  and the JVM shutdown summary, with zero pause events. Used as a
+  *false-positive guard* for downstream analysers: detectors should
+  produce no output.
+- `presets/epsilon-leak-pure.yaml` — R4 with an aggressive
+  `leak_rate` against a small heap. With no collection, OOM fires
+  at approximately `heap_max / leak_rate` seconds, providing a
+  deterministic reference point for leak-detection algorithms.
 
 ## R2 — `allocation-burst`
 
@@ -185,9 +206,16 @@ eventually fires.
 - `presets/leak-g1-slow.yaml` — G1, 1 GiB heap, 10-minute duration,
   default R4 parameters.
 - `presets/leak-zgc-slow.yaml` — extends the G1 preset, swaps to
-  ZGC. Useful contrast: ZGC's concurrent reclamation produces
-  shorter pauses while the leak progresses at the same wall-clock
-  rate.
+  generational ZGC. Useful contrast: ZGC's concurrent reclamation
+  produces shorter pauses while the leak progresses at the same
+  wall-clock rate.
+- `presets/leak-shenandoah-slow.yaml` — extends the G1 preset,
+  swaps to Shenandoah. Companion to the ZGC variant, exposing
+  Shenandoah's update-references phase as a third pause-time
+  signature on identical regime parameters.
+- `presets/epsilon-leak-pure.yaml` — R4 under Epsilon (no-op).
+  Reaches OOM deterministically; documented above under
+  *Negative baseline*.
 
 ## R5 — `cache-churn`
 
@@ -229,6 +257,11 @@ but only the leak grows it unboundedly.
   duration, default R5 parameters.
 - `presets/cache-parallel-churn.yaml` — extends the G1 preset,
   swaps to Parallel.
+- `presets/cache-serial-churn.yaml` — extends the G1 preset,
+  swaps to Serial on a 1 GiB heap. The single-threaded promotion
+  path produces a distinctive sawtooth pattern in old-gen
+  occupancy with longer per-GC pauses than the concurrent
+  collectors.
 
 ## R6 — `mixed-gc-pathological`
 

@@ -1,0 +1,47 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+metadata:
+  name: epsilon-baseline
+  version: 1.0.0
+  description: |
+    Negative baseline — Epsilon (no-op) GC under a steady-state-healthy
+    workload sized so that total allocations stay below the heap budget
+    over the run. No collection occurs; the unified GC log records
+    initialisation lines and the JVM shutdown summary, with no pause
+    events. Used to exercise the "no false positives" property of
+    downstream analysers: a phenomenon detector should report nothing.
+  tags: [v1, baseline, epsilon, no-op, negative]
+  authors: ["GC-Forge V1"]
+
+spec:
+  jvm:
+    vendor: temurin
+    major: 21
+
+  gc:
+    algorithm: Epsilon
+    options:
+      heap:
+        min: 2g
+        max: 2g
+
+  regime:
+    kind: steady-state-healthy
+    parameters:
+      allocation_rate_mb_s: 5
+      live_set_mb: 50
+      object_size_distribution: small
+      lifetime_distribution: short
+
+  duration: 60s
+  warmup: 5s
+  seed: 0xC0FFEE
+
+  expected:
+    phenomena: []
+    invariants:
+      - { rule: "young_count == 0",     threshold: 0 }
+      - { rule: "mixed_count == 0",     threshold: 0 }
+      - { rule: "full_count == 0",      threshold: 0 }
+      - { rule: "oom_seen == false",    threshold: false }

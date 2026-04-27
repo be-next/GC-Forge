@@ -91,7 +91,7 @@ two levels (`baseline → variant`).
 
 | Field         | Type                                       | Required | Notes |
 |---------------|--------------------------------------------|----------|-------|
-| `algorithm`   | `G1` &#124; `ZGC` &#124; `Parallel`        | yes      | MVP. Shenandoah, Serial, CMS land in V1+. |
+| `algorithm`   | `G1` &#124; `ZGC` &#124; `Parallel` &#124; `Shenandoah` &#124; `Serial` &#124; `Epsilon` | yes | All six are present in Temurin 17 / 21. CMS (deprecated and removed after JDK 14) and OpenJ9 collectors land in V1+. |
 | `options`     | object — see below                         | yes      | |
 | `extra_flags` | array of string                            | no       | GC-specific flags appended verbatim. |
 | `log_format`  | `unified` &#124; `legacy`                  | no       | Default `unified` (`-Xlog:gc*`). |
@@ -100,11 +100,30 @@ two levels (`baseline → variant`).
 
 | Field             | Type                  | Required | Notes |
 |-------------------|-----------------------|----------|-------|
-| `generational`    | bool                  | no       | ZGC only. The runner defaults to `true` on JDK 21+ when omitted. |
+| `generational`    | bool                  | no       | ZGC only. The runner defaults to `true` on JDK 21+ when omitted; setting `false` selects the non-generational variant via `-XX:-ZGenerational`. |
 | `heap`            | object — see below    | yes      | |
-| `pause_target_ms` | integer               | no       | G1 (`-XX:MaxGCPauseMillis`). |
+| `pause_target_ms` | integer               | no       | G1 (`-XX:MaxGCPauseMillis`); also honoured by Shenandoah. |
 | `region_size_mb`  | integer               | no       | G1 (`-XX:G1HeapRegionSize`). |
 | `ihop_percent`    | integer (0..100)      | no       | G1 (`-XX:InitiatingHeapOccupancyPercent`). |
+
+Algorithm-specific behaviour:
+
+- **`G1`** — emits `-XX:+UseG1GC` followed by `MaxGCPauseMillis`,
+  `G1HeapRegionSize`, and `InitiatingHeapOccupancyPercent` when the
+  corresponding option is set.
+- **`ZGC`** — emits `-XX:+UseZGC`. The generational mode is enabled
+  by default (`-XX:+ZGenerational`); set `generational: false` to
+  select the non-generational variant.
+- **`Parallel`** — emits `-XX:+UseParallelGC`.
+- **`Shenandoah`** — emits `-XX:+UseShenandoahGC`. Honours
+  `pause_target_ms`.
+- **`Serial`** — emits `-XX:+UseSerialGC`. Single-threaded
+  stop-the-world; appropriate for small heaps and single-core
+  environments.
+- **`Epsilon`** — emits
+  `-XX:+UnlockExperimentalVMOptions -XX:+UseEpsilonGC`. Performs
+  no collection: every allocation extends the heap until either
+  the run duration is reached or `OutOfMemoryError` fires.
 
 ### `spec.gc.options.heap`
 

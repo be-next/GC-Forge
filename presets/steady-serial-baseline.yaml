@@ -1,0 +1,40 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+extends: steady-g1-baseline.yaml
+
+metadata:
+  name: steady-serial-baseline
+  version: 1.0.0
+  description: |
+    Reference baseline — Serial collector on Temurin 21 under a small
+    steady-state-healthy workload. Single-threaded stop-the-world GC,
+    appropriate for embedded or single-core environments. Used as a
+    pedagogical baseline to distinguish "pause caused by the GC alone"
+    from concurrent-collector pause sources. Heap is intentionally
+    smaller than the G1 baseline, in line with Serial's typical
+    deployment envelope.
+  tags: [v1, baseline, serial, steady-state]
+
+spec:
+  gc:
+    algorithm: Serial
+    options:
+      heap:
+        min: 256m
+        max: 256m
+
+  regime:
+    kind: steady-state-healthy
+    parameters:
+      allocation_rate_mb_s: 20
+      live_set_mb: 50
+      object_size_distribution: mixed
+      lifetime_distribution: mixed
+
+  expected:
+    phenomena:
+      - young_gc_steady
+    invariants:
+      - { rule: "young_ratio >= 0.7",   threshold: 0.7 }
+      - { rule: "full_count == 0",      threshold: 0 }

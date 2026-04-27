@@ -5,8 +5,54 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ## [Unreleased]
 
+### Added
+
+- **Three new GC algorithms and one variant** in `gc-forge-scenario`'s
+  `GcAlgorithm` enum:
+    - `Shenandoah` — emits `-XX:+UseShenandoahGC`. Honours
+      `pause_target_ms`. Available on Temurin 17+.
+    - `Serial` — emits `-XX:+UseSerialGC`. Single-threaded
+      stop-the-world.
+    - `Epsilon` — emits
+      `-XX:+UnlockExperimentalVMOptions -XX:+UseEpsilonGC`.
+      Performs no collection.
+- **ZGC non-generational variant**. Setting
+  `spec.gc.options.generational: false` now emits the explicit
+  `-XX:-ZGenerational` flag, selecting the non-generational ZGC
+  variant on JDK 21. The default (omitted or `true`) remains
+  generational ZGC.
+- **Seven new presets** covering the new algorithms:
+  `steady-shenandoah-baseline`, `leak-shenandoah-slow`,
+  `steady-serial-baseline`, `cache-serial-churn`, `epsilon-baseline`
+  (negative baseline; no collection), `epsilon-leak-pure`
+  (deterministic OOM), `steady-zgc-nongen-baseline`. The shipped
+  catalogue grows from 14 to 21 presets.
+- **Negative phenomenon row** in `doc/concepts/traceability.md`:
+  `no_collection`, exhibited by `epsilon-baseline`. Used as a
+  false-positive guard for downstream analysers — detectors should
+  produce no output on the corresponding logs.
+- Six new unit tests in `gc-forge-runner::flags` covering the new
+  algorithms, the explicit-false ZGC case, and the unlock-then-use
+  ordering for Epsilon.
+- `doc/architecture.md` — single-page system architecture
+  documenting the Rust workspace, the Java workload harness, the
+  Docker runner subsystem, the wire formats, and the quality
+  gates.
+- `CONTRIBUTING.md` — contributor conventions, including the
+  documentation-language policy (English for user-facing material,
+  French for internal specifications), the Definition-of-Done
+  gate, and the branching model.
+
 ### Changed
 
+- JSON Schemas (`schemas/scenario-v1.json`,
+  `schemas/run-manifest-v1.json`) regenerated to reflect the
+  extended `GcAlgorithm` enum.
+- `doc/user/scenario-reference.md` documents each algorithm's
+  emitted flags.
+- `doc/user/regimes.md` enumerates the new presets per regime.
+- `README.md` status table reflects the new collector and preset
+  counts (6 collectors, 21 presets).
 - Documentation restructured around a scientific-style writing
   policy. `doc/pitch.md` was renamed to
   `doc/concepts/overview.md`; `doc/traceability.md` was moved to
@@ -23,17 +69,6 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
   replaced.
 - `doc/process/orchestration.md` updated for the new path of the
   traceability matrix and minor wording.
-
-### Added
-
-- `doc/architecture.md` — single-page system architecture
-  documenting the Rust workspace, the Java workload harness, the
-  Docker runner subsystem, the wire formats, and the quality
-  gates.
-- `CONTRIBUTING.md` — contributor conventions, including the
-  documentation-language policy (English for user-facing material,
-  French for internal specifications), the Definition-of-Done
-  gate, and the branching model.
 
 ## [0.1.0] — 2026-04-25
 

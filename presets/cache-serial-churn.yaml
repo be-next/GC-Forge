@@ -1,0 +1,26 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+extends: cache-g1-churn.yaml
+
+metadata:
+  name: cache-serial-churn
+  version: 1.0.0
+  description: |
+    R5 — cache-churn on the Serial collector. The single-threaded
+    promotion path under steady churn produces a distinctive sawtooth
+    pattern in old-gen occupancy, with longer per-GC pauses than G1 or
+    Parallel on the same workload.
+  tags: [v1, cache-churn, serial]
+
+spec:
+  gc:
+    algorithm: Serial
+    options:
+      heap:
+        min: 1g
+        max: 1g
+
+  expected:
+    phenomena:
+      - promotion_pressure

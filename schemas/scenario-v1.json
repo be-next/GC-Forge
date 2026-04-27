@@ -215,7 +215,10 @@
       "enum": [
         "G1",
         "ZGC",
-        "Parallel"
+        "Parallel",
+        "Shenandoah",
+        "Serial",
+        "Epsilon"
       ]
     },
     "GcOptions": {

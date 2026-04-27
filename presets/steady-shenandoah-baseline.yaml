@@ -1,0 +1,30 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+extends: steady-g1-baseline.yaml
+
+metadata:
+  name: steady-shenandoah-baseline
+  version: 1.0.0
+  description: |
+    Reference baseline — Shenandoah on Temurin 21 under a
+    steady-state-healthy workload. Same regime parameters as the G1
+    baseline; the contrast is in the GC algorithm. Shenandoah's
+    concurrent collection produces low-millisecond pauses and a
+    distinctive update-references phase visible in the unified GC log.
+  tags: [v1, baseline, shenandoah, steady-state]
+
+spec:
+  gc:
+    algorithm: Shenandoah
+    options:
+      heap:
+        min: 2g
+        max: 2g
+
+  expected:
+    phenomena:
+      - young_gc_steady
+    invariants:
+      - { rule: "full_count == 0",      threshold: 0 }
+      - { rule: "p99_pause_ms < 20",    threshold: 20 }

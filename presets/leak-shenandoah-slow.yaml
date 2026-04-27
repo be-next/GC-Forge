@@ -1,0 +1,29 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+extends: leak-g1-slow.yaml
+
+metadata:
+  name: leak-shenandoah-slow
+  version: 1.0.0
+  description: |
+    R4 — slow-leak on Shenandoah. Useful contrast with leak-g1-slow and
+    leak-zgc-slow: Shenandoah's concurrent reclamation maintains short
+    pauses while the leak progresses at the same wall-clock rate. The
+    after-GC live set climbs identically; the pause-time signature
+    differs.
+  tags: [v1, leak, shenandoah, slow]
+
+spec:
+  gc:
+    algorithm: Shenandoah
+    options:
+      heap:
+        min: 1g
+        max: 1g
+
+  expected:
+    phenomena:
+      - slow_leak
+    invariants:
+      - { rule: "after_gc_live_set_grows_linearly",       threshold: true }

@@ -37,36 +37,44 @@ Operational consequences of this convention:
 
 | Phenomenon                       | Presets                                                          | Expected GC-Insight detector |
 |----------------------------------|------------------------------------------------------------------|------------------------------|
-| `young_gc_steady`                | `steady-g1-baseline`, `steady-zgc-baseline`, `steady-parallel-baseline` | `<TODO: detector-id>` |
+| `young_gc_steady`                | `steady-g1-baseline`, `steady-zgc-baseline`, `steady-zgc-nongen-baseline`, `steady-parallel-baseline`, `steady-shenandoah-baseline`, `steady-serial-baseline` | `<TODO: detector-id>` |
 | `allocation_burst`               | `burst-g1-30s`, `burst-parallel-30s`                             | `<TODO: detector-id>` |
 | `humongous_allocation`           | `humongous-g1-classic`, `humongous-g1-evac-fail`                 | `<TODO: detector-id>` |
 | `evacuation_failure`             | `humongous-g1-evac-fail`                                         | `<TODO: detector-id>` |
 | `mixed_gc_efficient`             | `humongous-g1-classic`                                           | `<TODO: detector-id>` |
-| `slow_leak`                      | `leak-g1-slow`, `leak-zgc-slow`                                  | `<TODO: detector-id>` |
+| `slow_leak`                      | `leak-g1-slow`, `leak-zgc-slow`, `leak-shenandoah-slow`, `epsilon-leak-pure` | `<TODO: detector-id>` |
 | `full_gc`                        | `leak-g1-slow`                                                   | `<TODO: detector-id>` |
-| `oom`                            | (any leak preset whose budget exceeds the heap)                  | `<TODO: detector-id>` |
+| `oom`                            | `epsilon-leak-pure` (deterministic); any leak preset whose budget exceeds the heap | `<TODO: detector-id>` |
 | `concurrent_cycle_in_idle`       | `microservice-g1-stop-go`, `microservice-zgc-stop-go`            | `<TODO: detector-id>` |
-| `promotion_pressure`             | `cache-g1-churn`, `cache-parallel-churn`                         | `<TODO: detector-id>` |
+| `promotion_pressure`             | `cache-g1-churn`, `cache-parallel-churn`, `cache-serial-churn`   | `<TODO: detector-id>` |
 | `mixed_gc_pathological`          | `mixed-pathological-g1`                                          | `<TODO: detector-id>` |
+| `no_collection` (negative case)  | `epsilon-baseline`                                                | `<NONE: false-positive guard>` |
 
 ## Presets to expected phenomena
 
-| Preset                            | Algorithm | Heap  | Expected phenomena                                            |
-|-----------------------------------|-----------|-------|---------------------------------------------------------------|
-| `steady-g1-baseline`              | G1        | 2 GiB | `young_gc_steady`                                             |
-| `steady-zgc-baseline`             | ZGC       | 2 GiB | `young_gc_steady`                                             |
-| `steady-parallel-baseline`        | Parallel  | 2 GiB | `young_gc_steady`                                             |
-| `burst-g1-30s`                    | G1        | 2 GiB | `allocation_burst`                                            |
-| `burst-parallel-30s`              | Parallel  | 2 GiB | `allocation_burst`                                            |
-| `humongous-g1-classic`            | G1        | 2 GiB | `humongous_allocation`, `mixed_gc_efficient`                  |
-| `humongous-g1-evac-fail`          | G1        | 1 GiB | `humongous_allocation`, `evacuation_failure`                  |
-| `leak-g1-slow`                    | G1        | 1 GiB | `slow_leak`, `full_gc` (and `oom` on long enough runs)        |
-| `leak-zgc-slow`                   | ZGC       | 1 GiB | `slow_leak` (less likely to reach `full_gc` than the G1 variant) |
-| `cache-g1-churn`                  | G1        | 4 GiB | `promotion_pressure`                                          |
-| `cache-parallel-churn`            | Parallel  | 4 GiB | `promotion_pressure`                                          |
-| `mixed-pathological-g1`           | G1        | 2 GiB | `mixed_gc_pathological`                                       |
-| `microservice-g1-stop-go`         | G1        | 1 GiB | `concurrent_cycle_in_idle`                                    |
-| `microservice-zgc-stop-go`        | ZGC       | 1 GiB | (smoother contrast; fewer concurrent-cycle markers)           |
+| Preset                            | Algorithm           | Heap   | Expected phenomena                                            |
+|-----------------------------------|---------------------|--------|---------------------------------------------------------------|
+| `steady-g1-baseline`              | G1                  | 2 GiB  | `young_gc_steady`                                             |
+| `steady-zgc-baseline`             | ZGC (generational)  | 2 GiB  | `young_gc_steady`                                             |
+| `steady-zgc-nongen-baseline`      | ZGC (non-gen)       | 2 GiB  | `young_gc_steady`                                             |
+| `steady-parallel-baseline`        | Parallel            | 2 GiB  | `young_gc_steady`                                             |
+| `steady-shenandoah-baseline`      | Shenandoah          | 2 GiB  | `young_gc_steady`                                             |
+| `steady-serial-baseline`          | Serial              | 256 MiB| `young_gc_steady`                                             |
+| `burst-g1-30s`                    | G1                  | 2 GiB  | `allocation_burst`                                            |
+| `burst-parallel-30s`              | Parallel            | 2 GiB  | `allocation_burst`                                            |
+| `humongous-g1-classic`            | G1                  | 2 GiB  | `humongous_allocation`, `mixed_gc_efficient`                  |
+| `humongous-g1-evac-fail`          | G1                  | 1 GiB  | `humongous_allocation`, `evacuation_failure`                  |
+| `leak-g1-slow`                    | G1                  | 1 GiB  | `slow_leak`, `full_gc` (and `oom` on long enough runs)        |
+| `leak-zgc-slow`                   | ZGC (generational)  | 1 GiB  | `slow_leak` (less likely to reach `full_gc` than the G1 variant) |
+| `leak-shenandoah-slow`            | Shenandoah          | 1 GiB  | `slow_leak`                                                   |
+| `cache-g1-churn`                  | G1                  | 4 GiB  | `promotion_pressure`                                          |
+| `cache-parallel-churn`            | Parallel            | 4 GiB  | `promotion_pressure`                                          |
+| `cache-serial-churn`              | Serial              | 1 GiB  | `promotion_pressure`                                          |
+| `mixed-pathological-g1`           | G1                  | 2 GiB  | `mixed_gc_pathological`                                       |
+| `microservice-g1-stop-go`         | G1                  | 1 GiB  | `concurrent_cycle_in_idle`                                    |
+| `microservice-zgc-stop-go`        | ZGC (generational)  | 1 GiB  | (smoother contrast; fewer concurrent-cycle markers)           |
+| `epsilon-baseline`                | Epsilon (no-op)     | 2 GiB  | (negative case — no collection)                               |
+| `epsilon-leak-pure`               | Epsilon (no-op)     | 256 MiB| `slow_leak`, `oom` (deterministic OOM time)                   |
 
 ## Use cases
 

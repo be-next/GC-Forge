@@ -164,6 +164,9 @@ pub enum GcAlgorithm {
     #[serde(rename = "ZGC", alias = "Zgc", alias = "zgc")]
     Zgc,
     Parallel,
+    Shenandoah,
+    Serial,
+    Epsilon,
 }
 
 #[derive(Debug, Clone, PartialEq, Default, Serialize, Deserialize, JsonSchema)]

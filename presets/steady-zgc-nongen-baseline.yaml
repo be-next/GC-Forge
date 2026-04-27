@@ -1,0 +1,32 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+extends: steady-g1-baseline.yaml
+
+metadata:
+  name: steady-zgc-nongen-baseline
+  version: 1.0.0
+  description: |
+    Reference baseline — non-generational ZGC on Temurin 21. The same
+    R1 workload as steady-g1-baseline. Companion to steady-zgc-baseline
+    (which is generational): the contrast measures the value added by
+    the generational ZGC mode introduced as the default on JDK 21+.
+    Distinguishing the two on the same workload exposes the per-pause
+    cost paid in the absence of a young generation.
+  tags: [v1, baseline, zgc, non-generational, steady-state]
+
+spec:
+  gc:
+    algorithm: ZGC
+    options:
+      generational: false
+      heap:
+        min: 2g
+        max: 2g
+
+  expected:
+    phenomena:
+      - young_gc_steady
+    invariants:
+      - { rule: "full_count == 0",      threshold: 0 }
+      - { rule: "p99_pause_ms < 10",    threshold: 10 }

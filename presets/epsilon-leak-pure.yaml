@@ -1,0 +1,47 @@
+apiVersion: gc-forge/scenario.v1
+kind: Scenario
+
+metadata:
+  name: epsilon-leak-pure
+  version: 1.0.0
+  description: |
+    R4 — slow-leak under Epsilon (no-op) GC. With no collection, the
+    JVM heap fills monotonically and the run terminates with
+    OutOfMemoryError after approximately heap_max / leak_rate seconds.
+    Provides a deterministic anchor point for calibrating leak-detection
+    algorithms: the after-GC live set is identical to the allocated
+    set, and OOM time is fully determined by the leak rate and heap
+    budget. The duration is set generously; the run ends on OOM.
+  tags: [v1, leak, epsilon, no-op, pure]
+  authors: ["GC-Forge V1"]
+
+spec:
+  jvm:
+    vendor: temurin
+    major: 21
+
+  gc:
+    algorithm: Epsilon
+    options:
+      heap:
+        min: 256m
+        max: 256m
+
+  regime:
+    kind: slow-leak
+    parameters:
+      leak_rate_mb_s: 10
+      live_set_initial_mb: 50
+
+  duration: 5m
+  warmup: 2s
+  seed: 0xC0FFEE
+
+  expected:
+    phenomena:
+      - slow_leak
+      - oom
+    invariants:
+      - { rule: "young_count == 0",     threshold: 0 }
+      - { rule: "full_count == 0",      threshold: 0 }
+      - { rule: "oom_seen == true",     threshold: true }

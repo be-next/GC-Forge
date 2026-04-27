@@ -56,14 +56,32 @@ pub fn build_jvm_command(scenario: &Scenario, log_path: &Path) -> Vec<String> {
         }
         GcAlgorithm::Zgc => {
             argv.push("-XX:+UseZGC".to_owned());
-            // Generational ZGC defaults to true on JDK 21+. We treat
-            // `None` as "use the algorithm's natural default" (= true).
-            if !matches!(spec.gc.options.generational, Some(false)) {
-                argv.push("-XX:+ZGenerational".to_owned());
+            // Generational ZGC is the default on JDK 21+. `None` means
+            // "use the algorithm's natural default" (= true). An explicit
+            // `false` disables generational mode for the non-generational
+            // ZGC variant on JDK 21.
+            match spec.gc.options.generational {
+                None | Some(true) => argv.push("-XX:+ZGenerational".to_owned()),
+                Some(false) => argv.push("-XX:-ZGenerational".to_owned()),
             }
         }
         GcAlgorithm::Parallel => {
             argv.push("-XX:+UseParallelGC".to_owned());
+        }
+        GcAlgorithm::Shenandoah => {
+            argv.push("-XX:+UseShenandoahGC".to_owned());
+            if let Some(ms) = spec.gc.options.pause_target_ms {
+                argv.push(format!("-XX:MaxGCPauseMillis={ms}"));
+            }
+        }
+        GcAlgorithm::Serial => {
+            argv.push("-XX:+UseSerialGC".to_owned());
+        }
+        GcAlgorithm::Epsilon => {
+            // Epsilon is an experimental no-op GC. It must be unlocked
+            // before -XX:+UseEpsilonGC is accepted by the JVM.
+            argv.push("-XX:+UnlockExperimentalVMOptions".to_owned());
+            argv.push("-XX:+UseEpsilonGC".to_owned());
         }
     }
 
@@ -130,10 +148,11 @@ spec:
     }
 
     #[test]
-    fn zgc_explicit_false_drops_generational() {
+    fn zgc_explicit_false_emits_negated_generational() {
         let yaml = scenario_yaml("ZGC", "      generational: false\n");
         let argv = build_jvm_command(&s(&yaml), log_target());
         assert!(argv.iter().any(|a| a == "-XX:+UseZGC"));
+        assert!(argv.iter().any(|a| a == "-XX:-ZGenerational"));
         assert!(!argv.iter().any(|a| a == "-XX:+ZGenerational"));
     }
 
@@ -141,6 +160,42 @@ spec:
     fn parallel_emits_use_parallelgc() {
         let argv = build_jvm_command(&s(&scenario_yaml("Parallel", "")), log_target());
         assert!(argv.iter().any(|a| a == "-XX:+UseParallelGC"));
+    }
+
+    #[test]
+    fn shenandoah_emits_use_shenandoahgc() {
+        let argv = build_jvm_command(&s(&scenario_yaml("Shenandoah", "")), log_target());
+        assert!(argv.iter().any(|a| a == "-XX:+UseShenandoahGC"));
+        assert!(!argv.iter().any(|a| a.contains("UseG1GC")));
+    }
+
+    #[test]
+    fn shenandoah_honours_pause_target() {
+        let yaml = scenario_yaml("Shenandoah", "      pause_target_ms: 50\n");
+        let argv = build_jvm_command(&s(&yaml), log_target());
+        assert!(argv.iter().any(|a| a == "-XX:+UseShenandoahGC"));
+        assert!(argv.iter().any(|a| a == "-XX:MaxGCPauseMillis=50"));
+    }
+
+    #[test]
+    fn serial_emits_use_serialgc() {
+        let argv = build_jvm_command(&s(&scenario_yaml("Serial", "")), log_target());
+        assert!(argv.iter().any(|a| a == "-XX:+UseSerialGC"));
+    }
+
+    #[test]
+    fn epsilon_unlocks_experimental_then_uses_epsilongc() {
+        let argv = build_jvm_command(&s(&scenario_yaml("Epsilon", "")), log_target());
+        let unlock = argv
+            .iter()
+            .position(|a| a == "-XX:+UnlockExperimentalVMOptions");
+        let epsilon = argv.iter().position(|a| a == "-XX:+UseEpsilonGC");
+        assert!(unlock.is_some(), "missing unlock flag: {argv:?}");
+        assert!(epsilon.is_some(), "missing epsilon flag: {argv:?}");
+        assert!(
+            unlock.unwrap() < epsilon.unwrap(),
+            "unlock must precede UseEpsilonGC: {argv:?}"
+        );
     }
 
     #[test]

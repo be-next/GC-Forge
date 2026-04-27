@@ -17,9 +17,9 @@ Version `0.1.0` — first MVP release.
 | Item                | Coverage                                                        |
 |---------------------|-----------------------------------------------------------------|
 | Application regimes | 7 (steady-state, burst, humongous, slow-leak, cache-churn, mixed-GC pathological, microservice stop-and-go) |
-| GC collectors       | 3 (G1, generational ZGC, Parallel)                              |
+| GC collectors       | 6 (G1, ZGC generational and non-generational, Parallel, Shenandoah, Serial, Epsilon) |
 | JVM distributions   | Eclipse Temurin 17 and 21                                       |
-| Shipped presets     | 14 (embedded in the binary)                                     |
+| Shipped presets     | 21 (embedded in the binary)                                     |
 | CLI subcommands     | `lint`, `run`, `validate`, `batch`, `presets`, `selftest`, `variance-check` |
 | Wire formats        | `gc-forge/scenario.v1`, `gc-forge/run-manifest.v1`, `gc-forge/matrix.v1` |
 | Runner              | Docker (native runner planned for V1)                           |

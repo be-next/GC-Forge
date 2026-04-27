@@ -7,10 +7,11 @@ logs. From a YAML scenario describing a tuple `(JVM, GC algorithm,
 application regime)`, the tool runs a parameterised workload on a
 real Java Virtual Machine, captures the unified `-Xlog:gc*` output,
 and emits a hash-anchored manifest that documents the run for later
-reproduction. The MVP release (0.1.0) covers seven application
-regimes, three GC collectors (G1, generational ZGC, Parallel) on
-Eclipse Temurin 17 and 21, and ships fourteen presets embedded in
-the binary. GC-Forge is distributed under the MIT licence.
+reproduction. The first public release covers seven application
+regimes and six GC collectors — G1, ZGC (generational and
+non-generational), Parallel, Shenandoah, Serial, and Epsilon — on
+Eclipse Temurin 17 and 21, and ships twenty-one presets embedded
+in the binary. GC-Forge is distributed under the MIT licence.
 
 ## Motivation
 
@@ -79,10 +80,14 @@ The first public release covers:
 - seven regimes — `R1 steady-state-healthy`, `R2 allocation-burst`,
   `R3 humongous-pressure`, `R4 slow-leak`, `R5 cache-churn`,
   `R6 mixed-gc-pathological`, `R7 microservice-stop-and-go`;
-- three collectors — G1, generational ZGC, Parallel;
+- six collectors — G1, ZGC (generational and non-generational),
+  Parallel, Shenandoah, Serial, and Epsilon;
 - two JVM majors — Eclipse Temurin 17 and 21;
-- fourteen presets, embedded in the binary, covering the matrix
-  above with named scenarios suitable for direct use;
+- twenty-one presets, embedded in the binary, covering the matrix
+  above with named scenarios suitable for direct use, including
+  the negative case `epsilon-baseline` (no collection) and the
+  deterministic `epsilon-leak-pure` (OOM time fully determined by
+  leak rate and heap budget);
 - seven CLI subcommands — `lint`, `run`, `validate`, `batch`,
   `presets`, `selftest`, `variance-check`;
 - three frozen wire formats with published JSON Schemas —
