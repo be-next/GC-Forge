@@ -8,7 +8,7 @@
 # invocation. Used in particular to produce the JDK-17 half of the
 # learning corpus consumed by GC-Insight.
 
-FROM eclipse-temurin:17-jdk-jammy
+FROM eclipse-temurin:25-jdk-jammy
 
 LABEL org.opencontainers.image.title="gc-forge-runner"
 LABEL org.opencontainers.image.description="GC-Forge workload harness on Eclipse Temurin 17."
