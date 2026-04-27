@@ -32,6 +32,13 @@ jobs:
   build-cli:
     name: build cli (${{ matrix.target }})
     runs-on: ${{ matrix.os }}
+    # softprops/action-gh-release (the "Attach to GitHub Release" step
+    # below) calls the GitHub API to create/update the draft Release;
+    # it requires `contents: write` on the workflow token. Without this
+    # block, the default per-job token is `contents: read` and the step
+    # fails with HTTP 403.
+    permissions:
+      contents: write
     strategy:
       fail-fast: false
       matrix:
