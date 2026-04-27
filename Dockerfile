@@ -1,7 +1,7 @@
 # GC-Forge runner image — embeds the workload harness on Temurin 21.
 # Used by `make demo` (iter 1) and by the DockerRunner backend (iter 3).
 
-FROM eclipse-temurin:21-jdk-jammy
+FROM eclipse-temurin:25-jdk-jammy
 
 LABEL org.opencontainers.image.title="gc-forge-runner"
 LABEL org.opencontainers.image.description="GC-Forge workload harness on Eclipse Temurin 21."

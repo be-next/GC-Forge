@@ -2,7 +2,7 @@
 # Sibling of Dockerfile (which targets Temurin 21). Used to produce the
 # JDK-17 half of the GC-Insight learning corpus.
 
-FROM eclipse-temurin:17-jdk-jammy
+FROM eclipse-temurin:25-jdk-jammy
 
 LABEL org.opencontainers.image.title="gc-forge-runner"
 LABEL org.opencontainers.image.description="GC-Forge workload harness on Eclipse Temurin 17."
