@@ -32,5 +32,5 @@ below at first contact and used as reference afterwards.
   the contract surface with downstream analysers.
 - [`../architecture.md`](../architecture.md) — system architecture,
   for users who need to integrate GC-Forge into a larger pipeline.
-- [`../specs/`](../specs/) — internal product specifications (FR).
+- [`../specs/`](../specs/) — internal product specifications.
   Not required reading for day-to-day use of the CLI.

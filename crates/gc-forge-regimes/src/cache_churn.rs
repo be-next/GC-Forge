@@ -1,6 +1,6 @@
 //! R5 — cache-churn regime, Rust side.
 //!
-//! Reference: SPEC-FONCTIONNELLE §4.5.
+//! Reference: SPEC-FUNCTIONAL §4.5.
 
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};

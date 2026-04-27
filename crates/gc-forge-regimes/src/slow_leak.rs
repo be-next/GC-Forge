@@ -1,6 +1,6 @@
 //! R4 — slow-leak regime, Rust side.
 //!
-//! Reference: SPEC-FONCTIONNELLE §4.4.
+//! Reference: SPEC-FUNCTIONAL §4.4.
 
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};

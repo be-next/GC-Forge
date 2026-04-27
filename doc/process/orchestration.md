@@ -177,5 +177,5 @@ build.
 ## References
 
 - Implementation plan: `/Users/jerome/.claude/plans/ok-partout-structured-feather.md` (working copy; this file is the durable, in-tree counterpart).
-- Specifications: `doc/specs/SPEC-FONCTIONNELLE.md`, `doc/specs/SPEC-TECHNIQUE.md`, `doc/specs/ROADMAP.md`, `doc/specs/RISQUES.md`, `doc/specs/BACKLOG.md`.
+- Specifications: `doc/specs/SPEC-FUNCTIONAL.md`, `doc/specs/SPEC-TECHNICAL.md`, `doc/specs/ROADMAP.md`, `doc/specs/RISKS.md`, `doc/specs/BACKLOG.md`.
 - Release workflow: `.github/workflows/release.yml`.

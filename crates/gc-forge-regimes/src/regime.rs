@@ -1,6 +1,6 @@
 //! `Regime` trait and registry for GC-Forge.
 //!
-//! Reference: SPEC-TECHNIQUE §4.3.
+//! Reference: SPEC-TECHNICAL §4.3.
 
 use thiserror::Error;
 

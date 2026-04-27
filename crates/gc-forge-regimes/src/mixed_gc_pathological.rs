@@ -1,6 +1,6 @@
 //! R6 — mixed-gc-pathological regime, Rust side.
 //!
-//! Reference: SPEC-FONCTIONNELLE §4.6.
+//! Reference: SPEC-FUNCTIONAL §4.6.
 
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};

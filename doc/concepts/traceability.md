@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Section 11 of the functional specification ([`SPEC-FONCTIONNELLE.md`](../specs/SPEC-FONCTIONNELLE.md))
+Section 11 of the functional specification ([`SPEC-FUNCTIONAL.md`](../specs/SPEC-FUNCTIONAL.md))
 mandates a traceability matrix linking each GC phenomenon to (i) the
 presets that exhibit it under a faithful run and (ii) the GC-Insight
 detectors expected to surface it. This document materialises the
@@ -100,7 +100,7 @@ Changes to GC-Forge that affect the first two columns require a
 synchronised update to GC-Insight's expected detector behaviour;
 changes to GC-Insight that affect the third column are merged with
 the corresponding update to this document. The
-`gc-core-roundtrip` integration test ([`SPEC-TECHNIQUE`
-§7.4](../specs/SPEC-TECHNIQUE.md)) provides a coarse cross-project
+`gc-core-roundtrip` integration test ([`SPEC-TECHNICAL`
+§7.4](../specs/SPEC-TECHNICAL.md)) provides a coarse cross-project
 check by parsing a GC-Forge log with the GC-Insight parser and
 asserting structural agreement.

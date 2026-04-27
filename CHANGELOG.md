@@ -5,6 +5,47 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ## [Unreleased]
 
+### Changed (specs translation + resync)
+
+- **Documentation language policy unified to English.** The
+  earlier carve-out for `doc/specs/` and `doc/brief-*.md` (which
+  were authored in French) has been lifted. `CLAUDE.md`,
+  `CONTRIBUTING.md`, the `feedback_doc_language` memory, and the
+  short note in `doc/concepts/overview.md` were updated.
+- **`doc/specs/` translated and resynchronised** with the 0.1.0
+  implementation:
+    - `doc/specs/SPEC-FONCTIONNELLE.md` → `SPEC-FUNCTIONAL.md`
+      (rename + rewrite). The collector table grows from three
+      to six MVP entries (G1, ZGC, Parallel, Shenandoah, Serial,
+      Epsilon); a new `no_collection` phenomenon documents the
+      Epsilon negative-baseline use case; the preset table
+      reflects all 21 shipped presets.
+    - `doc/specs/SPEC-TECHNIQUE.md` → `SPEC-TECHNICAL.md`
+      (rename + rewrite). The runner-image paragraph reflects
+      the new `docker/jdk{17,21}/Dockerfile` layout; the
+      Algorithm enum example includes Shenandoah, Serial,
+      Epsilon; the Docker tagging strategy reflects the
+      `<version>-jdk{17,21}` scheme delivered during the
+      consistency pass.
+    - `doc/specs/RISQUES.md` → `RISKS.md` (rename + rewrite).
+      Each risk gains an *Outcome* line reporting the 0.1.0-era
+      retrospective.
+    - `doc/specs/ROADMAP.md` rewrite. Phases 0 through 3 carry
+      a delivered status; V1.1 was reorganised because
+      Shenandoah and Serial were promoted from V1 to MVP.
+    - `doc/specs/BACKLOG.md` rewrite. Each user story carries a
+      Status field (✅ delivered, 🟡 partial, ⏳ pending).
+    - `doc/specs/README.md` rewrite. The synthesis table is
+      updated; a *Note on collector scope* paragraph documents
+      the promotion of Shenandoah, Serial, and Epsilon to MVP.
+- **`doc/brief-gcforge-cowork.md` translated to English** with
+  an editorial note marking it as a historical document.
+- **All in-repo references updated** consistently: cross-links
+  in user docs, code comments under `crates/**`, the workspace
+  `deny.toml` comment, the `(FR)` annotations in the repo-layout
+  tables. No broken markdown link remains; the workspace builds
+  and tests pass.
+
 ### Changed (consistency pass)
 
 - **Runner Dockerfiles relocated** to symmetric per-JDK

@@ -1,7 +1,7 @@
 //! Application regimes for GC-Forge.
 //!
 //! Iteration 4 introduces the [`Regime`] trait and the first concrete
-//! implementation, [`SteadyStateRegime`] (R1 in SPEC-FONCTIONNELLE §4.1).
+//! implementation, [`SteadyStateRegime`] (R1 in SPEC-FUNCTIONAL §4.1).
 //! The remaining six MVP regimes land in iterations 7–12.
 
 pub mod allocation_burst;

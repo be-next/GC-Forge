@@ -1,6 +1,6 @@
 //! R2 — allocation-burst regime, Rust side.
 //!
-//! Reference: SPEC-FONCTIONNELLE §4.2.
+//! Reference: SPEC-FUNCTIONAL §4.2.
 
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};

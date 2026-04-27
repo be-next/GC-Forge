@@ -6,7 +6,7 @@ This document describes the runtime and build-time architecture of
 GC-Forge 0.1.0. It is intended for contributors and integrators who
 need a single-page picture of how a `gc-forge run` invocation flows
 through the system. Authoritative design rationale lives in the
-internal technical specification ([`SPEC-TECHNIQUE.md`](specs/SPEC-TECHNIQUE.md),
+internal technical specification ([`SPEC-TECHNICAL.md`](specs/SPEC-TECHNICAL.md),
 in French).
 
 ## Component overview
@@ -100,7 +100,7 @@ that:
   mount is skipped and `--embedded-harness <PATH>` is passed
   through to `java -jar`;
 - builds the standardised `-Xlog:gc*=info,gc+heap=debug,gc+age=trace,gc+phases=debug,gc+humongous=trace`
-  flag mandated by [`SPEC-TECHNIQUE`](specs/SPEC-TECHNIQUE.md) §6.1;
+  flag mandated by [`SPEC-TECHNICAL`](specs/SPEC-TECHNICAL.md) §6.1;
 - selects the JVM image from the scenario's `spec.jvm.major`
   (`eclipse-temurin:{17,21}-jdk-jammy` by default; overridable via
   `--image`).
@@ -146,7 +146,7 @@ Each run records, in the manifest:
 This information is sufficient, in principle, to reproduce the run
 on a different host modulo the inherent non-determinism of the
 JVM. Inter-run variance budgets are documented in
-[`SPEC-FONCTIONNELLE`](specs/SPEC-FONCTIONNELLE.md) §7.3 and
+[`SPEC-FUNCTIONAL`](specs/SPEC-FUNCTIONAL.md) §7.3 and
 verified at release time by `gc-forge variance-check`.
 
 ## Quality gates
@@ -167,10 +167,10 @@ Docker image to GHCR.
 
 ## References
 
-- [`doc/specs/SPEC-TECHNIQUE.md`](specs/SPEC-TECHNIQUE.md) —
-  authoritative technical specification (FR), with rationale.
-- [`doc/specs/SPEC-FONCTIONNELLE.md`](specs/SPEC-FONCTIONNELLE.md)
-  — authoritative functional specification (FR).
+- [`doc/specs/SPEC-TECHNICAL.md`](specs/SPEC-TECHNICAL.md) —
+  authoritative technical specification with rationale.
+- [`doc/specs/SPEC-FUNCTIONAL.md`](specs/SPEC-FUNCTIONAL.md)
+  — authoritative functional specification.
 - [`doc/process/orchestration.md`](process/orchestration.md) —
   development process and DoD gate.
 - [`doc/concepts/traceability.md`](concepts/traceability.md) —

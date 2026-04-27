@@ -1,6 +1,6 @@
 //! R3 — humongous-pressure regime, Rust side.
 //!
-//! Reference: SPEC-FONCTIONNELLE §4.3.
+//! Reference: SPEC-FUNCTIONAL §4.3.
 
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};

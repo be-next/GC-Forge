@@ -1,6 +1,6 @@
 //! Scenario data model — the typed representation of `gc-forge/scenario.v1`.
 //!
-//! Reference: SPEC-FONCTIONNELLE §5.1.
+//! Reference: SPEC-FUNCTIONAL §5.1.
 
 use std::path::PathBuf;
 

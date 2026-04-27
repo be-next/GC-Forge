@@ -1,6 +1,6 @@
 //! Docker-backed [`Runner`] implementation.
 //!
-//! Reference: SPEC-TECHNIQUE §4.5.1.
+//! Reference: SPEC-TECHNICAL §4.5.1.
 
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};

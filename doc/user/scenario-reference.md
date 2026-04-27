@@ -181,7 +181,7 @@ Ground truth used by `gc-forge validate` after the run.
 | `phenomena`  | array of phenomenon ID strings                 |
 | `invariants` | array of `{ rule: <expr>, threshold: <value> }`|
 
-Phenomenon IDs are listed in `SPEC-FONCTIONNELLE.md` §6.3.
+Phenomenon IDs are listed in `SPEC-FUNCTIONAL.md` §6.3.
 
 ## CLI overrides
 

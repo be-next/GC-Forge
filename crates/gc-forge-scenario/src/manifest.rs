@@ -1,6 +1,6 @@
 //! Run manifest — the persistent record of one execution.
 //!
-//! Reference: SPEC-FONCTIONNELLE §6.2.
+//! Reference: SPEC-FUNCTIONAL §6.2.
 
 use std::fs;
 use std::io::Write;

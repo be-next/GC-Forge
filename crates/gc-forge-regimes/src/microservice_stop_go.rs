@@ -1,6 +1,6 @@
 //! R7 — microservice-stop-and-go regime, Rust side.
 //!
-//! Reference: SPEC-FONCTIONNELLE §4.7.
+//! Reference: SPEC-FUNCTIONAL §4.7.
 
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};

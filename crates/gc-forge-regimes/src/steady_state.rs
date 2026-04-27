@@ -1,6 +1,6 @@
 //! R1 — steady-state-healthy regime, Rust side.
 //!
-//! Reference: SPEC-FONCTIONNELLE §4.1.
+//! Reference: SPEC-FUNCTIONAL §4.1.
 
 use serde::{Deserialize, Serialize};
 use serde_yaml::{Mapping, Value};

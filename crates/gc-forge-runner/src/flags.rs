@@ -1,6 +1,6 @@
 //! Translation from a resolved [`Scenario`] to a JVM command line.
 //!
-//! Reference: SPEC-TECHNIQUE §6.1 (unified `-Xlog`) and §4.5 (algorithm flags).
+//! Reference: SPEC-TECHNICAL §6.1 (unified `-Xlog`) and §4.5 (algorithm flags).
 //! Pure function — no I/O, no environment lookup, no OS-specific logic.
 
 use std::path::Path;

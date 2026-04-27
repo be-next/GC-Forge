@@ -1,6 +1,6 @@
 //! [`Runner`] trait, [`RunSpec`], [`RunOutcome`], and error types.
 //!
-//! Reference: SPEC-TECHNIQUE §4.5.
+//! Reference: SPEC-TECHNICAL §4.5.
 
 use std::path::PathBuf;
 use std::time::SystemTime;

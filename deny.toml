@@ -1,6 +1,6 @@
 # cargo-deny configuration
 # Enforces license compatibility with the project's MIT license and surfaces
-# advisories early. See doc/specs/RISQUES.md R-L4 for context.
+# advisories early. See doc/specs/RISKS.md R-L4 for context.
 
 [graph]
 all-features = false

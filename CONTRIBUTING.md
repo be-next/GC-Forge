@@ -34,7 +34,7 @@ A short description of each top-level entry follows; refer to
 |-----------------------------|-----------------------------------------------------------|
 | `Cargo.toml`, `crates/`     | Rust workspace (six crates).                              |
 | `workload-harness/`         | Java workload harness (Maven, fat-jar).                   |
-| `presets/`                  | Fourteen YAML scenarios shipped with the binary.          |
+| `presets/`                  | Twenty-one YAML scenarios shipped with the binary.          |
 | `schemas/`                  | JSON Schemas generated from the Rust model.               |
 | `docker/jdk21/Dockerfile`   | Runner image embedding the harness on Temurin 21.         |
 | `docker/jdk17/Dockerfile`   | Runner image variant on Temurin 17.                       |
@@ -51,8 +51,8 @@ The `doc/` directory is organised as follows.
 | `doc/concepts/`            | All           | Cross-cutting concepts (overview, traceability).   |
 | `doc/user/`                | Users         | Tutorial, regime catalogue, reference manuals.     |
 | `doc/process/`             | Contributors  | Development process and DoD gate.                  |
-| `doc/specs/`               | Maintainers   | Internal specifications (FR).                      |
-| `doc/brief-gcforge-*.md`   | Maintainers   | Original project brief (FR).                       |
+| `doc/specs/`               | Maintainers   | Internal specifications.                      |
+| `doc/brief-gcforge-*.md`   | Maintainers   | Original project brief.                       |
 
 ## Development environment
 
@@ -156,7 +156,7 @@ GC-Forge is one half of a pair; GC-Insight is the analyser
 counterpart. Changes that affect the GC log model
 (`gc-core` shape) require synchronisation with GC-Insight and are
 covered by the `gc-core-roundtrip` test described in
-[`SPEC-TECHNIQUE`](doc/specs/SPEC-TECHNIQUE.md) §7.4. The
+[`SPEC-TECHNICAL`](doc/specs/SPEC-TECHNICAL.md) §7.4. The
 [`traceability matrix`](doc/concepts/traceability.md) records the
 contract surface between the two projects.
 

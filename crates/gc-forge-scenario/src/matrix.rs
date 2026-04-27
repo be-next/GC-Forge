@@ -1,6 +1,6 @@
 //! `gc-forge/matrix.v1` — matrix runner schema.
 //!
-//! Reference: SPEC-FONCTIONNELLE §9.2.
+//! Reference: SPEC-FUNCTIONAL §9.2.
 
 use std::collections::BTreeMap;
 use std::fs;

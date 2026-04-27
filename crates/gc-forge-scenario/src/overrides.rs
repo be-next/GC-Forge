@@ -4,7 +4,7 @@
 //! apply the overrides on the YAML tree representation of the resolved
 //! scenario; deserialise the result.
 //!
-//! Reference: SPEC-FONCTIONNELLE §5.4.
+//! Reference: SPEC-FUNCTIONAL §5.4.
 
 use std::path::Path;
 

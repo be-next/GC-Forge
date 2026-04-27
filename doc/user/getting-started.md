@@ -32,7 +32,7 @@ workload, and only that.
 - A POSIX shell on Linux or macOS.
 - Docker Engine or Docker Desktop on the local machine. The MVP
   runs all JVMs inside Docker for reproducibility (see
-  [`SPEC-TECHNIQUE`](../specs/SPEC-TECHNIQUE.md) §5).
+  [`SPEC-TECHNICAL`](../specs/SPEC-TECHNICAL.md) §5).
 - For local development of GC-Forge itself: Rust 1.94 or later,
   Maven 3.9 or later, JDK 17 or later.
 

@@ -84,7 +84,7 @@ the output directory.
 The runner always passes `--rm`, `--network=none`, and `--entrypoint=java`,
 mounts the output directory at `/work`, and emits the unified
 `-Xlog:gc*=info,gc+heap=debug,gc+age=trace,gc+phases=debug,gc+humongous=trace:file=/work/<name>-<seed>.log:time,level,tags,pid,tid:filecount=0`
-flag to the JVM (cf. SPEC-TECHNIQUE §6.1).
+flag to the JVM (cf. SPEC-TECHNICAL §6.1).
 
 When the scenario's `metadata.name` is `foo` and `spec.seed` is `0xC0FFEE`, the
 output filenames become `foo-c0ffee.log` and `foo-c0ffee.manifest.yaml`. The

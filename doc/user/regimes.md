@@ -9,7 +9,7 @@ validated.
 
 This page documents the public contract of each regime. The full
 implementation rationale lives in
-[`SPEC-FONCTIONNELLE`](../specs/SPEC-FONCTIONNELLE.md) §4.
+[`SPEC-FUNCTIONAL`](../specs/SPEC-FUNCTIONAL.md) §4.
 
 ## R1 — `steady-state-healthy`
 
