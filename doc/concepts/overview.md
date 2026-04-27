@@ -98,23 +98,22 @@ The first public release covers:
 ## Outlook
 
 Subsequent releases broaden coverage along three axes. V1 extends
-the JVM matrix (Corretto, OpenJ9, Shenandoah, Serial), introduces a
-native runner that downloads JDK distributions on demand, and adds
-a `mirror` subcommand that proposes a scenario from a customer's
-production log. V2 introduces a synthetic-hybrid generator
-calibrated on real traces — useful when machine-learning datasets
-need to scale beyond what real JVMs can produce in reasonable
-time — and pursues licensed JVMs (Zing, Prime). A detailed plan is
-maintained in [`doc/specs/ROADMAP.md`](../specs/ROADMAP.md) (in
-French; the project's internal specifications are written in the
-language of the team that authored them).
+the JVM matrix to non-Temurin distributions (Corretto, GraalVM,
+OpenJ9), introduces a native runner that downloads JDK
+distributions on demand, and adds a `mirror` subcommand that
+proposes a scenario from a customer's production log. V2
+introduces a synthetic-hybrid generator calibrated on real traces
+— useful when machine-learning datasets need to scale beyond what
+real JVMs can produce in reasonable time — and pursues licensed
+JVMs (Zing, Prime). A detailed plan is maintained in
+[`doc/specs/ROADMAP.md`](../specs/ROADMAP.md).
 
 ## References
 
 - [`doc/architecture.md`](../architecture.md) — system architecture.
 - [`doc/concepts/traceability.md`](traceability.md) — the
   phenomenon × preset × analyser-detector matrix.
-- [`doc/specs/SPEC-FONCTIONNELLE.md`](../specs/SPEC-FONCTIONNELLE.md)
-  — functional specification (FR).
-- [`doc/specs/SPEC-TECHNIQUE.md`](../specs/SPEC-TECHNIQUE.md) —
-  technical specification (FR).
+- [`doc/specs/SPEC-FUNCTIONAL.md`](../specs/SPEC-FUNCTIONAL.md) —
+  functional specification.
+- [`doc/specs/SPEC-TECHNICAL.md`](../specs/SPEC-TECHNICAL.md) —
+  technical specification.

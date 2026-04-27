@@ -81,17 +81,17 @@ The documentation is organised by audience.
 - [`CONTRIBUTING.md`](CONTRIBUTING.md) — contribution conventions.
 - [`CHANGELOG.md`](CHANGELOG.md) — release history.
 
-### Internal product specifications (French)
+### Internal product specifications
 
-The framing documents authored during the design phase are
-preserved in their original language. Day-to-day use of GC-Forge
-does not require reading them.
+These framing documents capture the structural decisions and
+remain authoritative for future evolution. Day-to-day use of
+GC-Forge does not require reading them.
 
-- [`doc/specs/SPEC-FONCTIONNELLE.md`](doc/specs/SPEC-FONCTIONNELLE.md)
-- [`doc/specs/SPEC-TECHNIQUE.md`](doc/specs/SPEC-TECHNIQUE.md)
+- [`doc/specs/SPEC-FUNCTIONAL.md`](doc/specs/SPEC-FUNCTIONAL.md)
+- [`doc/specs/SPEC-TECHNICAL.md`](doc/specs/SPEC-TECHNICAL.md)
 - [`doc/specs/ROADMAP.md`](doc/specs/ROADMAP.md)
 - [`doc/specs/BACKLOG.md`](doc/specs/BACKLOG.md)
-- [`doc/specs/RISQUES.md`](doc/specs/RISQUES.md)
+- [`doc/specs/RISKS.md`](doc/specs/RISKS.md)
 
 ## Architecture, in brief
 
@@ -126,10 +126,8 @@ A versioned BibTeX entry will be added once a DOI is assigned.
 
 Contributions are welcome under the project's MIT licence; see
 [`CONTRIBUTING.md`](CONTRIBUTING.md) for the conventions used by
-the project, including the documentation language policy
-(English for user-facing material, French for internal
-specifications), the Definition-of-Done gate, and the branching
-model.
+the project, including the documentation language policy (English
+throughout), the Definition-of-Done gate, and the branching model.
 
 Bug reports are tracked in GitHub Issues. A bug report is most
 useful when accompanied by the relevant section of the manifest

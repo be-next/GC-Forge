@@ -11,21 +11,19 @@ terms; no contributor licence agreement is required.
 
 ## Documentation language
 
-User-facing and contributor-facing documentation is written in
-**English**. This includes the top-level `README.md`, the user
-manuals under `doc/user/`, the architecture and concept documents
-under `doc/architecture.md` and `doc/concepts/`, the changelog,
-commit messages, code comments, and CLI help strings.
+All written material in this repository is in **English**. This
+includes the top-level `README.md`, the user manuals under
+`doc/user/`, the architecture and concept documents under
+`doc/architecture.md` and `doc/concepts/`, the internal product
+specifications under `doc/specs/`, the original project brief
+under `doc/brief-*.md`, the changelog, commit messages, code
+comments, and CLI help strings.
 
-Internal product specifications and the original project brief
-(under `doc/specs/` and `doc/brief-*.md`) are written in
-**French**. They are framing documents authored by the team and
-preserved in the language they were drafted in. Translating them
-is not required and not encouraged: the user-facing surfaces above
-are sufficient to use, integrate with, and contribute to GC-Forge.
-
-Code identifiers (Rust and Java) are in English, following the
-conventions of each language ecosystem.
+The earlier carve-out for the internal specifications (originally
+in French) has been lifted: the specs are now kept in sync with
+the implementation as it evolves, and that synchronisation is
+easier in a single language. Code identifiers (Rust and Java) are
+in English, following the conventions of each language ecosystem.
 
 ## Repository layout
 
