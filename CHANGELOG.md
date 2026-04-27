@@ -5,7 +5,35 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ## [Unreleased]
 
-_(no entries — main is at 0.1.0)_
+### Changed
+
+- Documentation restructured around a scientific-style writing
+  policy. `doc/pitch.md` was renamed to
+  `doc/concepts/overview.md`; `doc/traceability.md` was moved to
+  `doc/concepts/traceability.md`. Both files were rewritten with a
+  sober register and an explicit conventions section.
+- `README.md` is now the canonical entry point for the project,
+  with a status table, a quickstart, an architecture summary,
+  audience-segmented documentation links, and a citation entry.
+- `doc/user/getting-started.md`, `doc/user/regimes.md`,
+  `doc/user/cli-reference.md`, `doc/user/scenario-reference.md`,
+  and `doc/user/README.md` underwent a tonal harmonisation.
+  Per-regime "Available since: iteration N" annotations were
+  removed; informal expressions ("yak shave", "footgun") were
+  replaced.
+- `doc/process/orchestration.md` updated for the new path of the
+  traceability matrix and minor wording.
+
+### Added
+
+- `doc/architecture.md` — single-page system architecture
+  documenting the Rust workspace, the Java workload harness, the
+  Docker runner subsystem, the wire formats, and the quality
+  gates.
+- `CONTRIBUTING.md` — contributor conventions, including the
+  documentation-language policy (English for user-facing material,
+  French for internal specifications), the Definition-of-Done
+  gate, and the branching model.
 
 ## [0.1.0] — 2026-04-25
 

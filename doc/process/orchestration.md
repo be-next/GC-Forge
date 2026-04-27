@@ -1,6 +1,8 @@
 # Implementation orchestration
 
-This document describes how GC-Forge is built. It is the durable counterpart of the implementation plan and applies to every iteration until the MVP `0.1.0` ships.
+This document describes how GC-Forge is built. It is the durable
+in-tree counterpart of the implementation plan and applies to every
+iteration up to and including the MVP 0.1.0 release.
 
 ## Goals
 
@@ -25,7 +27,7 @@ Six roles cover the work. They rotate every iteration, with the constraint that 
 | Reviewer    | Reviews architecture, security, spec alignment, performance. Signs `API-FREEZE.md`. Can block the merge. |
 | Tester-unit | Writes unit tests in Rust (`cargo test`) and Java (JUnit 5). Drives coverage. |
 | Tester-func | Runs integration tests that launch real JVMs in Docker, on impacted presets and the smoke selftest. Maintains `BUGS.md`. |
-| Doc-writer  | Maintains `doc/user/`, `CHANGELOG.md`, `README.md`, and from iteration 13 onwards `doc/traceability.md`. |
+| Doc-writer  | Maintains `doc/user/`, `CHANGELOG.md`, `README.md`, and from iteration 13 onwards `doc/concepts/traceability.md`. |
 | Teamlead    | Arbitrates edge cases, manages role rotation, writes the `ITERATION-LOG.md` entry, decides the merge after the DoD gate is green. |
 
 ## Iteration flow
@@ -92,7 +94,7 @@ When iteration 17 reaches the point where the release tag is the only remaining 
 | `API-FREEZE.md` | Coder + Reviewer | Gate 1; overwritten each iteration. |
 | `CHANGELOG.md` | Doc-writer | Keep-a-Changelog. |
 | `doc/user/*.md` | Doc-writer | User documentation, kept in sync with the code. |
-| `doc/traceability.md` | Doc-writer (from iter 13) | Matrix of phenomenon × preset × insight-capability. |
+| `doc/concepts/traceability.md` | Doc-writer (from iter 13) | Matrix of phenomenon × preset × insight-capability. |
 | `scripts/dod-gate.sh` | Coder (iter 1) | Gate 3. |
 | `.github/workflows/ci.yml` | Coder (iter 1) | Continuous integration. |
 
@@ -168,8 +170,9 @@ append-only. Instead:
 2. Cut a `X.Y.Z+1` patch tag with the fix and walk the procedure
    again from step 1.
 
-For `publish-docker`, the latest tag overwrite is fine on retry; the
-multi-arch manifest will simply point at the new build.
+For `publish-docker`, overwriting the `:latest` tag on retry is
+acceptable; the multi-architecture manifest then points at the new
+build.
 
 ## References
 

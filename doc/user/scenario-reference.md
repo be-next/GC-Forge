@@ -1,10 +1,10 @@
 # Scenario reference (`gc-forge/scenario.v1`)
 
-A GC-Forge scenario is a YAML document describing **what** to run (which JVM,
-which GC algorithm, which workload regime) and **for how long**. The
-authoritative JSON Schema is committed at
-[`schemas/scenario-v1.json`](../../schemas/scenario-v1.json) and is generated
-from the typed Rust model — regenerate it with:
+A GC-Forge scenario is a YAML document describing *what* to run
+(which JVM, which GC algorithm, which workload regime) and *for
+how long*. The authoritative JSON Schema is committed at
+[`schemas/scenario-v1.json`](../../schemas/scenario-v1.json) and is
+generated from the typed Rust model:
 
 ```sh
 cargo run -p gc-forge-scenario --bin gen-schema
@@ -12,7 +12,7 @@ cargo run -p gc-forge-scenario --bin gen-schema
 
 This page is the human-readable companion to that schema.
 
-## Document outline
+## Document structure
 
 ```yaml
 apiVersion: gc-forge/scenario.v1
@@ -176,10 +176,10 @@ gc-forge lint scenario.yaml \
   --override 'spec.regime.parameters.humongous_ratio=0.7'
 ```
 
-The right-hand side is parsed as YAML, so scalars (`"4g"`, `42`, `true`),
-arrays (`"[a, b, c]"`), and even maps are accepted. An override that breaks
-the schema is rejected with the same error you would get from a bad YAML
-file.
+The right-hand side is parsed as YAML, so scalars (`"4g"`, `42`,
+`true`), arrays (`"[a, b, c]"`), and maps are accepted. An override
+that breaks the schema is rejected with the same error returned for
+an invalid YAML file.
 
 ## Linting
 

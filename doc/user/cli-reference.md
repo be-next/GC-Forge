@@ -1,8 +1,8 @@
 # CLI reference
 
-This page documents every subcommand shipped in 0.1.0. Each section
-lists flags, defaults and exit codes; per-feature behaviour lives in
-the matching crate's tests.
+This page documents every subcommand shipped in 0.1.0. Each
+section lists flags, defaults, and exit codes. Detailed per-feature
+behaviour is covered by the unit tests of the matching Rust crate.
 
 ## Synopsis
 
@@ -27,8 +27,10 @@ Subcommands:
     --no-color        Disable ANSI colours; `NO_COLOR` is also honoured.
 ```
 
-A machine-readable `--output json` mode is reserved for V1; for now,
-parse the manifests written next to each log — they are the contract.
+A machine-readable `--output json` mode is reserved for V1. In
+0.1.0, the manifest written next to each log is the
+machine-readable artefact: it is typed, hash-anchored, and
+self-describing.
 
 ## Exit codes
 
