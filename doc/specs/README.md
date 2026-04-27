@@ -1,56 +1,98 @@
-# GC-Forge — Spécifications
+# GC-Forge — internal specifications
 
-Production des spécifications fonctionnelles et techniques pour GC-Forge, le générateur de GC logs Java pendant de [GC-Insight](#).
+Internal product specifications for GC-Forge, the declarative
+generator of Java GC logs that pairs with GC-Insight.
 
-**Statut** : V1.0 — émis le 25 avril 2026 par Cowork à la demande de Jérôme.
+**Status.** Originally produced on 2026-04-25 as a French set of
+framing documents. Translated to English and resynchronised with
+the implemented MVP on 2026-04-27. The specs are authoritative for
+future evolution and are kept in sync with the code.
 
 ## Documents
 
-| # | Document | Objet |
+| # | Document | Topic |
 |---|----------|-------|
-| 1 | [SPEC-FONCTIONNELLE.md](./SPEC-FONCTIONNELLE.md) | Cas d'usage, modèle de scénario YAML, catalogue des régimes/JVMs/algos, formats d'entrée et de sortie, presets pré-packagés du MVP. |
-| 2 | [SPEC-TECHNIQUE.md](./SPEC-TECHNIQUE.md) | Architecture, choix technologiques argumentés, workspace Rust, harness Java, gestion du parc JVM, packaging, stratégie de tests, reproductibilité, CI. |
-| 3 | [ROADMAP.md](./ROADMAP.md) | Trajectoire MVP → V1 → V2, jalons, critères de sortie, dépendances. |
-| 4 | [BACKLOG.md](./BACKLOG.md) | Epics et user stories de premier niveau, priorisation MVP. |
-| 5 | [RISQUES.md](./RISQUES.md) | Registre des risques (techniques, projet, légaux, produit) et points ouverts. |
+| 1 | [SPEC-FUNCTIONAL.md](./SPEC-FUNCTIONAL.md) | Use cases, YAML scenario model, catalogue of regimes / JVMs / collectors, input and output formats, shipped presets. |
+| 2 | [SPEC-TECHNICAL.md](./SPEC-TECHNICAL.md) | Architecture, technology choices, Rust workspace, Java harness, JVM management, packaging, test strategy, reproducibility, CI. |
+| 3 | [ROADMAP.md](./ROADMAP.md) | MVP → V1 → V2 trajectory, milestones, exit criteria, dependencies. |
+| 4 | [BACKLOG.md](./BACKLOG.md) | Top-level epics and user stories, MVP prioritisation. |
+| 5 | [RISKS.md](./RISKS.md) | Risk register (technical, project, legal, product) and open points. |
 
-## Synthèse des décisions structurantes
+## Synthesis of structural decisions
 
-Les choix tranchés dans les specs (référence : §7 du brief) :
+The structural choices fixed during the specification phase
+(see brief §7), all delivered in the 0.1.0 MVP:
 
-| # | Question | Décision retenue | Document |
-|---|----------|------------------|----------|
-| 1 | Approche réelle vs synthétique | **Réelle** au MVP (exécution de vraies JVMs avec workloads paramétrables), trajectoire **hybride** en V2 (synthèse pour cas extrêmes). | TECH §3 |
-| 2 | Modèle de scénario | **YAML déclaratif** (schéma `gc-forge/scenario v1`), validé par JSON Schema. | FONC §5 |
-| 3 | Régimes MVP | **7 régimes** : steady-state-healthy, allocation-burst, humongous-pressure, slow-leak, cache-churn, mixed-gc-pathological, microservice-stop-and-go. | FONC §4 |
-| 4 | JVMs/algos MVP | **Eclipse Temurin** (HotSpot) JDK 17 & 21, algos **G1 / ZGC / Parallel**. Corretto, GraalVM, OpenJ9, Shenandoah, Serial reportés en V1. | FONC §3 |
-| 5 | Gestion parc JVM | **Docker en MVP** (eclipse-temurin officielles), **mode natif** via téléchargement Adoptium en V1. Pas de BYO-JVM avant V1. | TECH §5 |
-| 6 | Open-source vs propriétaire | **Open-source MIT**. Levier marketing pour GC-Insight, moat ailleurs. | TECH §9 |
-| 7 | Format métadonnées | **YAML** par défaut (cohérent avec scénario), **JSON** optionnel pour CI/ML. Schéma `gc-forge/run-manifest v1`. | FONC §6 |
-| 8 | Critères de qualité | **Rules-as-code** par régime (invariants quantifiés), **suite de validation** rejouée à chaque release, **variance inter-run** ≤ 5 % sur métriques clés. | FONC §7, TECH §7 |
+| # | Question | Decision | Reference |
+|---|----------|----------|-----------|
+| 1 | Real workload vs synthetic generation | **Real JVMs at MVP** (parameterised workload harness on a real JVM). Synthetic-hybrid generation deferred to V2. | TECH §3 |
+| 2 | Scenario model | **Declarative YAML** (`gc-forge/scenario.v1`), validated against a JSON Schema generated from the typed model. | FUNC §5 |
+| 3 | MVP regimes | **Seven regimes**: `steady-state-healthy`, `allocation-burst`, `humongous-pressure`, `slow-leak`, `cache-churn`, `mixed-gc-pathological`, `microservice-stop-and-go`. | FUNC §4 |
+| 4 | MVP JVMs and collectors | **Eclipse Temurin** JDK 17 and 21 only. **Six MVP collectors**: G1, ZGC (generational and non-generational), Parallel, Shenandoah, Serial, Epsilon. Corretto, GraalVM, and OpenJ9 deferred to V1. | FUNC §3 |
+| 5 | JVM provisioning | **Docker at MVP** (`eclipse-temurin:{17,21}-jdk-jammy`), **native runner** via Adoptium download in V1. BYO-JVM deferred to V1+. | TECH §5 |
+| 6 | Licence | **MIT** from MVP onwards. | TECH §9 |
+| 7 | Manifest format | **YAML** by default (`gc-forge/run-manifest.v1`), JSON optional. | FUNC §6 |
+| 8 | Quality gate | **Rules-as-code** per regime (quantified invariants), **`gc-forge selftest`** rerun at every release, **inter-run variance** ≤ 5 % targeted. | FUNC §7, TECH §7 |
 
-## Cohérence avec GC-Insight
+## Note on collector scope
 
-GC-Forge réutilise et étend l'écosystème GC-Insight :
+The original cadrage (2026-04-25) listed three MVP collectors —
+G1, generational ZGC, Parallel — and deferred Shenandoah and
+Serial to V1.1. The implementation as delivered in 0.1.0 promotes
+Shenandoah, Serial, and the Epsilon (no-op) collector to the MVP
+because they are all available in Temurin without parser
+extension. The 0.1.0 MVP therefore covers six collectors instead
+of three; OpenJ9 (which would require extending the GC-log
+parser) remains a V1 item. ROADMAP §V1 has been updated
+accordingly.
 
-- **Crate partagé `gc-core`** : structures communes (modèle GC, événements normalisés, identifiants) — voir TECH §2.
-- **Philosophie déclarative YAML** : mêmes conventions que les définitions de patterns de GC-Insight.
-- **Cohérence d'expérience CLI** : mêmes conventions de sous-commandes, formats de sortie, niveaux de verbosité.
+## Consistency with GC-Insight
 
-## MVP visé
+GC-Forge reuses and extends the GC-Insight ecosystem:
 
-**Cible : MVP étendu, 8-10 semaines solo en temps partiel** (cf. ROADMAP §2).
+- **Shared `gc-core` crate**: common types (GC model, normalised
+  events, identifiers) — see TECHNICAL §2.
+- **Same declarative YAML philosophy** as the GC-Insight pattern
+  definitions.
+- **Consistent CLI experience**: shared subcommand conventions,
+  output formats, verbosity levels.
 
-Périmètre : `gc-forge run <scenario.yaml>` produit un log G1/ZGC/Parallel sur Temurin 17 ou 21, accompagné d'un manifeste, exécuté soit en Docker soit en natif, avec 14 presets pédagogiques inclus et un mode batch matriciel.
+The contract surface is documented in
+[`doc/concepts/traceability.md`](../concepts/traceability.md).
 
-**Note sur la dérive vs §9 du brief** : le brief vise 4-6 semaines pour un MVP. Cowork propose 8-10 semaines (avec phase 4 « mode natif » optionnelle) pour un **périmètre élargi** validé en début de mission : 3 algos (vs 1-2), 2 versions JDK (vs 1), 7 régimes (vs ~5), 14 presets, métadonnées riches dès J1. La trajectoire courte 4-6 semaines reste atteignable en coupant : Phase 4 entière, mode batch (Phase 3), et 2-3 régimes « secondaires » (R5 cache-churn, R6 mixed-pathological, R7 microservice). Cette option est explicitée en ROADMAP §10 (« sensibilités »).
+## MVP scope
 
-## Critères de succès des specs
+**Target: extended MVP, 8–10 weeks solo part-time** (see ROADMAP §2).
 
-Référence : §9 du brief. À auto-évaluer après lecture :
+Scope as delivered in 0.1.0: `gc-forge run <scenario.yaml>`
+produces a real GC log on a Temurin 17 or 21 JVM under one of six
+collectors, accompanied by a hash-anchored manifest, executed via
+Docker, with twenty-one shipped presets and a matrix batch mode.
 
-- [ ] Un développeur Rust comprend l'archi cible et démarre l'implémentation sans ambiguïté majeure.
-- [ ] Tous les points du §7 sont tranchés et argumentés.
-- [ ] La cohérence avec GC-Insight est démontrée (réutilisation `gc-core`, conventions communes).
-- [ ] Le MVP proposé est livrable en 8-10 semaines solo temps partiel.
-- [ ] Le document permet de bâtir un pitch interne ou auprès de tiers.
+**Note on scope drift versus brief §9.** The original brief
+targeted 4–6 weeks for an MVP. Cowork proposed 8–10 weeks (with
+Phase 4 *native runner* optional) for an **extended scope**: 3
+collectors (vs 1–2), 2 JDK versions (vs 1), 7 regimes (vs ~5),
+14 presets, rich metadata from day one. The actual delivery
+expanded that further during implementation: 6 collectors and 21
+presets, with the additional collectors and presets adding
+marginal effort because they reuse the same workload harness and
+the same parser. The short 4–6-week trajectory remains
+documented in ROADMAP §10 (*sensitivities*) for future
+re-applicability.
+
+## Spec acceptance criteria
+
+Reference: brief §9. Self-checked after delivery:
+
+- [x] A Rust developer understands the target architecture and
+  starts implementing without major ambiguity. (Backed by the
+  delivery of all 17 implementation iterations on the original
+  decomposition.)
+- [x] All points from brief §7 are settled and argued.
+- [x] Consistency with GC-Insight is established (`gc-core`
+  shared crate, common conventions, traceability matrix).
+- [x] The proposed MVP is delivered in the 8–10-week solo
+  part-time envelope.
+- [x] The document supports a written pitch and an internal
+  presentation (see [`doc/concepts/overview.md`](../concepts/overview.md)).
