@@ -1,441 +1,522 @@
-# GC-Forge — Backlog initial
+# GC-Forge — initial backlog
 
-> **Référence** : brief du 25 avril 2026, §8.4.
-> Backlog structuré en **epics** et **user stories** de premier niveau, priorisé MVP / V1 / V2.
+> **Reference**: brief of 25 April 2026, §8.4.
+> Backlog structured as **epics** and top-level **user stories**,
+> prioritised MVP / V1 / V2.
+> **Status (2026-04-27)**: every MVP (P0) story below is
+> **delivered** unless explicitly noted. The status column on the
+> right reports the disposition.
 
 ## Conventions
 
-- **Priorités** : `P0` (MVP, bloquant), `P1` (V1, important), `P2` (V2 ou opportuniste).
-- **Estimation** : XS (≤ 0,5 j), S (1 j), M (2-3 j), L (4-7 j), XL (> 1 sem).
-- **Format US** : `En tant que <persona>, je veux <action>, afin de <bénéfice>.`
-- **Critères d'acceptation** : conditions vérifiables en QA/CI.
+- **Priorities**: `P0` (MVP, blocking), `P1` (V1, important), `P2`
+  (V2 or opportunistic).
+- **Estimation**: XS (≤ 0.5 d), S (1 d), M (2–3 d), L (4–7 d),
+  XL (> 1 wk).
+- **Story format**: *As a `<persona>`, I want `<action>`, in
+  order to `<benefit>`.*
+- **Acceptance criteria**: conditions that can be verified in
+  QA/CI.
+- **Status**: ✅ delivered, 🟡 in progress, ⏳ pending, 🚫 dropped.
 
 ---
 
-## EPIC 1 — Infrastructure et tronc commun
+## EPIC 1 — Infrastructure and core trunk
 
-**Objectif** : poser le squelette technique sur lequel tout le reste s'empile.
+**Objective**: lay down the technical skeleton on which everything
+else stacks.
 
-### US-1.1 — Workspace Cargo et CI initiale
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : En tant que dev GC-Forge, je veux un workspace Cargo multi-crates et une CI verte sur un commit minimal, afin de pouvoir itérer sans dette d'environnement.
-- **Critères** :
-  - `cargo build --workspace` passe sur Linux et macOS.
-  - `cargo fmt --check`, `cargo clippy -D warnings`, `cargo deny check` passent en CI.
-  - Workspace contient les 6 crates de la SPEC-TECH §2.1 (squelettes vides acceptés).
+### US-1.1 — Cargo workspace and initial CI
 
-### US-1.2 — Projet Maven du harness Java
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : En tant que dev GC-Forge, je veux un projet Maven qui produit un fat-jar `workload-harness.jar`, afin de pouvoir l'embarquer dans les exécutions JVM.
-- **Critères** :
-  - `mvn package` produit `target/workload-harness-<version>.jar`.
-  - Build reproductible : SHA-256 stable entre runs identiques.
-  - CI Java verte sur Maven 3.9 + JDK 17.
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+- **Story**: As a GC-Forge developer, I want a multi-crate Cargo
+  workspace and a green CI on a minimal commit, in order to
+  iterate without environment debt.
+- **Acceptance**:
+  - `cargo build --workspace` passes on Linux and macOS.
+  - `cargo fmt --check`, `cargo clippy -D warnings`, `cargo deny
+    check` pass in CI.
+  - Workspace contains the six crates of SPEC-TECHNICAL §2.1
+    (empty skeletons accepted).
 
-### US-1.3 — Image Docker runner
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : En tant que dev GC-Forge, je veux une image Docker `gc-forge-runner` qui contient Temurin + le harness, afin d'avoir un environnement d'exécution figé.
-- **Critères** :
-  - Variantes `jdk17` et `jdk21`.
-  - Multi-arch `linux/amd64` + `linux/arm64`.
-  - Publication automatique sur GHCR au tag.
+### US-1.2 — Java harness Maven project
 
----
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+- **Story**: As a GC-Forge developer, I want a Maven project
+  producing a `workload-harness.jar` fat-jar, in order to embed
+  it in JVM executions.
+- **Acceptance**:
+  - `mvn package` produces `target/workload-harness-<version>.jar`.
+  - Reproducible build: stable SHA-256 across identical runs.
+  - Java CI green on Maven 3.9 + JDK 17.
 
-## EPIC 2 — Modèle de scénario
+### US-1.3 — Docker runner image
 
-**Objectif** : exposer le modèle déclaratif YAML promis par le brief §4.
-
-### US-2.1 — Parser et validation du schéma `gc-forge/scenario.v1`
-- **Priorité** : P0
-- **Estimation** : M
-- **Story** : En tant qu'utilisateur, je veux écrire un scénario YAML conforme au schéma `scenario.v1` et avoir des erreurs explicites en cas de problème.
-- **Critères** :
-  - Tous les champs typés Rust avec `serde`.
-  - JSON Schema généré via `schemars` et publié dans `schemas/scenario-v1.json`.
-  - Erreurs avec ligne/colonne et suggestion (ex. typo sur `kind`).
-
-### US-2.2 — Mécanisme `extends` et résolution
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : En tant qu'utilisateur, je veux qu'un scénario puisse hériter d'un autre via `extends:`, afin de réutiliser des bases sans dupliquer.
-- **Critères** :
-  - Merge récursif des maps, override des scalaires.
-  - Détection de cycles d'`extends`.
-  - Path résolu relativement au fichier extender.
-
-### US-2.3 — Override CLI `--override`
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : En tant qu'utilisateur, je veux passer `--override 'spec.gc.options.heap.max=4g'` pour tweaker un scénario sans le copier.
-- **Critères** :
-  - Syntaxe JSONPath simple (notation `a.b.c`).
-  - Override appliqué après `extends`.
-  - Type-checked contre le schéma.
-
-### US-2.4 — Sous-commande `gc-forge lint`
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : En tant qu'utilisateur, je veux valider un scénario sans l'exécuter.
-- **Critères** :
-  - Exit 0 si valide, exit 1 sinon.
-  - Vérifie la compatibilité (jvm/algo, algo/régime).
-  - Sortie JSON avec `--output json`.
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+- **Story**: As a GC-Forge developer, I want a Docker image
+  `gc-forge-runner` that contains Temurin and the harness, in
+  order to have a frozen execution environment.
+- **Acceptance**:
+  - `jdk17` and `jdk21` variants under `docker/jdk{17,21}/`.
+  - Multi-architecture `linux/amd64` + `linux/arm64`.
+  - Automatic publication to GHCR on tag.
 
 ---
 
-## EPIC 3 — Régimes applicatifs
+## EPIC 2 — Scenario model
 
-**Objectif** : produire le comportement GC attendu pour chacun des 7 régimes.
+**Objective**: expose the declarative YAML model promised by
+brief §4.
 
-### US-3.1 — Trait `Regime` et registry
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : En tant que dev GC-Forge, je veux un trait Rust `Regime` et un registry, afin que chaque régime suive le même contrat.
-- **Critères** :
-  - Trait défini avec méthodes : `id`, `parameters_schema`, `workload_args`, `invariants`, `expected_phenomena`, `validate`.
-  - Registry typé `RegimeRegistry::lookup(&str) -> Option<Box<dyn Regime>>`.
+### US-2.1 — Parser and validation of `gc-forge/scenario.v1`
 
-### US-3.2 — Régime `steady-state-healthy`
-- **Priorité** : P0
-- **Estimation** : M
-- **Story** : Implémenter R1 côté Rust + côté harness Java.
-- **Critères** :
-  - Invariants définis (cf. SPEC-FONC §4.1) : young_ratio, full_count, p99_pause_ms.
-  - Test d'intégration : preset `steady-g1-baseline` produit un log valide.
-  - Variance CV ≤ 5 % sur 5 runs.
+- **Priority**: P0 — **Estimation**: M — **Status**: ✅
+- **Story**: As a user, I want to write a YAML scenario
+  conforming to the `scenario.v1` schema and receive explicit
+  errors when something is wrong.
+- **Acceptance**:
+  - All fields typed in Rust with `serde`.
+  - JSON Schema generated via `schemars` and published at
+    `schemas/scenario-v1.json`.
+  - Errors carry line/column information and a suggestion (e.g.
+    typo on `kind`).
 
-### US-3.3 à US-3.8 — Autres régimes
-- **Priorité** : P0 (R2, R3, R4, R5, R6, R7)
-- **Estimation** : M chacun (sauf R6 et R4 = L)
-- **Story** : Idem US-3.2 pour les régimes R2, R3, R4, R5, R6, R7.
-- **Critères** : invariants définis, presets passants, variance acceptable.
+### US-2.2 — `extends` mechanism and resolution
 
-### US-3.9 — Briques d'allocation Java réutilisables
-- **Priorité** : P0
-- **Estimation** : M
-- **Story** : En tant que dev du harness, je veux des classes utilitaires (`AllocationEngine`, `BurstScheduler`, `LeakReservoir`, `LruCacheChurn`) réutilisables entre régimes.
-- **Critères** :
-  - Tests unitaires Java sur chaque brique.
-  - Reproductibilité à seed donné.
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+- **Story**: As a user, I want a scenario to inherit from another
+  via `extends:`, in order to reuse bases without duplicating.
+- **Acceptance**:
+  - Recursive map merge, scalar override.
+  - Cycle detection on `extends`.
+  - Path resolved relative to the extender file.
+
+### US-2.3 — CLI override `--override`
+
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+- **Story**: As a user, I want to pass
+  `--override 'spec.gc.options.heap.max=4g'` to tweak a scenario
+  without copying it.
+- **Acceptance**:
+  - Simple JSONPath-style syntax (dotted notation).
+  - Override applied after `extends`.
+  - Type-checked against the schema.
+
+### US-2.4 — `gc-forge lint` subcommand
+
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+- **Story**: As a user, I want to validate a scenario without
+  executing it.
+- **Acceptance**:
+  - Exit 0 if valid, exit 1 otherwise.
+  - Checks compatibility (jvm/algo, algo/regime).
+  - JSON output reserved for V1 (`--output json`).
 
 ---
 
-## EPIC 4 — Exécution et orchestration
+## EPIC 3 — Application regimes
 
-**Objectif** : lancer une JVM, capturer un log, gérer la robustesse.
+**Objective**: produce the expected GC behaviour for each of the
+seven regimes.
+
+### US-3.1 — `Regime` trait and registry
+
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+- **Story**: As a GC-Forge developer, I want a Rust `Regime`
+  trait and a registry, so each regime follows the same contract.
+- **Acceptance**:
+  - Trait defined with methods: `id`, `parameters_schema`,
+    `workload_args`, `invariants`, `expected_phenomena`,
+    `validate`.
+  - Typed registry `RegimeRegistry::lookup(&str) ->
+    Option<Box<dyn Regime>>`.
+
+### US-3.2 — `steady-state-healthy` regime
+
+- **Priority**: P0 — **Estimation**: M — **Status**: ✅
+- **Story**: Implement R1 on the Rust side and the Java harness
+  side.
+- **Acceptance**:
+  - Invariants defined (cf. SPEC-FUNCTIONAL §4.1):
+    `young_ratio`, `full_count`, `p99_pause_ms`.
+  - Integration test: preset `steady-g1-baseline` produces a
+    valid log.
+  - Variance CV ≤ 5 % over 5 runs.
+
+### US-3.3 to US-3.8 — Other regimes
+
+- **Priority**: P0 (R2, R3, R4, R5, R6, R7) — **Estimation**:
+  M each (R6 and R4 = L) — **Status**: ✅
+- **Story**: Same as US-3.2 for R2, R3, R4, R5, R6, R7.
+- **Acceptance**: invariants defined, presets passing, variance
+  acceptable.
+
+### US-3.9 — Reusable Java allocation building blocks
+
+- **Priority**: P0 — **Estimation**: M — **Status**: ✅
+- **Story**: As a harness developer, I want utility classes
+  (`AllocationEngine`, `BurstScheduler`, `LeakReservoir`,
+  `LruCacheChurn`) reusable across regimes.
+- **Acceptance**:
+  - Java unit tests on each block.
+  - Reproducibility for a given seed.
+
+---
+
+## EPIC 4 — Execution and orchestration
+
+**Objective**: launch a JVM, capture a log, manage robustness.
 
 ### US-4.1 — `DockerRunner` MVP
-- **Priorité** : P0
-- **Estimation** : L
-- **Story** : Lancer une JVM dans un container Docker avec les bons flags et capturer le log.
-- **Critères** :
-  - Images Temurin 17 et 21 supportées.
-  - Volume de sortie monté.
-  - `--network=none` par défaut.
-  - Codes de retour traduits en `RunOutcome`.
-  - Timeout configurable, kill propre.
 
-### US-4.2 — Capture du log GC unifié
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : Construire la string `-Xlog:...` selon l'algo et capturer le fichier de log.
-- **Critères** :
-  - Flags par algo conformes à SPEC-TECH §6.1.
-  - Log écrit sans transformation, hash SHA-256 calculé.
+- **Priority**: P0 — **Estimation**: L — **Status**: ✅
+- **Story**: Launch a JVM in a Docker container with the right
+  flags and capture the log.
+- **Acceptance**:
+  - Temurin 17 and 21 images supported.
+  - Output volume mounted (absolute host path).
+  - `--network=none` by default.
+  - Return codes translated into `RunOutcome`.
+  - Configurable timeout, clean kill.
 
-### US-4.3 — Gestion des erreurs JVM
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : Distinguer OOM, timeout, échec de lancement, erreur runtime.
-- **Critères** :
-  - `RunOutcome::status` ∈ {Success, Oom, Timeout, JvmError, Internal}.
-  - Stderr JVM capturé pour diag.
+### US-4.2 — Unified GC log capture
+
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+- **Story**: Build the `-Xlog:...` string per algorithm and
+  capture the log file.
+- **Acceptance**:
+  - Per-algorithm flags conform to SPEC-TECHNICAL §6.1.
+  - Log written without transformation, SHA-256 computed.
+
+### US-4.3 — JVM error handling
+
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+- **Story**: Distinguish OOM, timeout, launch failure, runtime
+  error.
+- **Acceptance**:
+  - `RunOutcome::status` ∈ {Success, Oom, Timeout, JvmError,
+    Internal}.
+  - JVM stderr captured for diagnostics.
 
 ### US-4.4 — `NativeRunner` (V1)
-- **Priorité** : P1
-- **Estimation** : L
-- **Story** : Téléchargement Adoptium, cache local, exécution native sans Docker.
-- **Critères** :
-  - Cache `~/.gc-forge/jvms/`.
-  - Vérification SHA-256 contre checksums Adoptium.
-  - Lock file pour exécutions concurrentes.
 
-### US-4.5 — Sélection auto Docker/Native
-- **Priorité** : P1
-- **Estimation** : S
-- **Story** : Choisir automatiquement le runner disponible.
+- **Priority**: P1 — **Estimation**: L — **Status**: ⏳
+- **Story**: Adoptium download, local cache, native execution
+  without Docker.
+- **Acceptance**:
+  - Cache `~/.gc-forge/jvms/`.
+  - SHA-256 verification against Adoptium checksums.
+  - Lock file for concurrent executions.
+
+### US-4.5 — Auto Docker/native selection
+
+- **Priority**: P1 — **Estimation**: S — **Status**: ⏳
+- **Story**: Automatically choose the available runner.
 
 ### US-4.6 — BYO-JVM
-- **Priorité** : P1
-- **Estimation** : S
-- **Story** : Permettre à l'utilisateur de fournir son propre `JAVA_HOME`.
+
+- **Priority**: P1 — **Estimation**: S — **Status**: ⏳
+- **Story**: Allow the user to provide their own `JAVA_HOME`.
 
 ---
 
-## EPIC 5 — Manifeste et reproductibilité
+## EPIC 5 — Manifest and reproducibility
 
-**Objectif** : produire la fiche d'identité de chaque run et garantir la reproductibilité sémantique.
+**Objective**: produce the identity card of every run and
+guarantee semantic reproducibility.
 
-### US-5.1 — Schéma `gc-forge/run-manifest.v1`
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : Définir la structure du manifeste (cf. SPEC-FONC §6.2).
-- **Critères** :
-  - Type Rust + JSON Schema généré.
-  - Sérialisation YAML par défaut, JSON via flag.
+### US-5.1 — `gc-forge/run-manifest.v1` schema
 
-### US-5.2 — Émission du manifeste post-run
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : Construire un manifeste à partir du scénario résolu et du `RunOutcome`.
-- **Critères** :
-  - Hash log + hash jar + version GC-Forge présents.
-  - `expected_phenomena` peuplés depuis le régime.
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+- **Story**: Define the manifest structure (cf. SPEC-FUNCTIONAL §6.2).
+- **Acceptance**:
+  - Rust type + generated JSON Schema.
+  - YAML serialisation by default, JSON via flag.
 
-### US-5.3 — Hash du harness reproductible
-- **Priorité** : P0
-- **Estimation** : XS
-- **Story** : Le SHA-256 de `workload-harness.jar` doit être stable.
-- **Critères** :
-  - Build Maven avec timestamps figés.
-  - Ordre de fichiers dans le jar déterministe.
+### US-5.2 — Post-run manifest emission
+
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+- **Story**: Build a manifest from the resolved scenario and the
+  `RunOutcome`.
+- **Acceptance**:
+  - Log hash + jar hash + GC-Forge version present.
+  - `expected_phenomena` populated from the regime.
+
+### US-5.3 — Reproducible harness hash
+
+- **Priority**: P0 — **Estimation**: XS — **Status**: ✅
+- **Story**: The SHA-256 of `workload-harness.jar` must be
+  stable.
+- **Acceptance**:
+  - Maven build with frozen timestamps.
+  - Deterministic file ordering in the jar.
 
 ---
 
-## EPIC 6 — Validation post-run
+## EPIC 6 — Post-run validation
 
-**Objectif** : vérifier qu'un log généré respecte bien les invariants annoncés.
+**Objective**: verify that a generated log matches the announced
+invariants.
 
-### US-6.1 — Parser de log GC partagé
-- **Priorité** : P0
-- **Estimation** : L
-- **Story** : Avoir un parser de log GC unifié dans `gc-core` (ou prototype dans `gc-forge-validate` à pousser ensuite vers `gc-core`).
-- **Critères** :
-  - Couvre G1, ZGC, Parallel sur JDK 17 et 21.
-  - Extraction d'événements suffisante pour tous les invariants définis dans les régimes.
-  - Pas un parser exhaustif — focus sur ce dont on a besoin.
+### US-6.1 — Shared GC log parser
 
-### US-6.2 — Engine d'invariants
-- **Priorité** : P0
-- **Estimation** : M
-- **Story** : Évaluer un ensemble d'`Invariant` contre un `ParsedLog`.
-- **Critères** :
+- **Priority**: P0 — **Estimation**: L — **Status**: ✅
+- **Story**: Have a unified GC log parser in `gc-core` (or a
+  prototype in `gc-forge-validate` to be promoted to `gc-core`).
+- **Acceptance**:
+  - Covers G1, ZGC, Parallel on JDK 17 and 21.
+  - Sufficient event extraction for every invariant defined in
+    the regimes.
+  - Not an exhaustive parser — focused on what is needed.
+
+### US-6.2 — Invariant engine
+
+- **Priority**: P0 — **Estimation**: M — **Status**: ✅
+- **Story**: Evaluate a set of `Invariant`s against a `ParsedLog`.
+- **Acceptance**:
   - Type `Invariant { rule: String, threshold: Threshold, ... }`.
-  - `ValidationReport` consigné dans le manifeste.
-  - Codes de retour distinguant succès / violation / erreur de parsing.
+  - `ValidationReport` recorded in the manifest.
+  - Return codes distinguishing success / violation / parse
+    error.
 
-### US-6.3 — Sous-commande `gc-forge validate`
-- **Priorité** : P0
-- **Estimation** : XS
-- **Story** : Re-vérifier a posteriori un log + manifeste.
-- **Critères** : exit 0 si tous les invariants passent, exit 3 sinon.
+### US-6.3 — `gc-forge validate` subcommand
+
+- **Priority**: P0 — **Estimation**: XS — **Status**: ✅
+- **Story**: Re-check a log + manifest after the fact.
+- **Acceptance**: exit 0 if every invariant passes, exit 3
+  otherwise.
 
 ---
 
 ## EPIC 7 — Presets
 
-### US-7.1 — Presets MVP (14)
-- **Priorité** : P0
-- **Estimation** : M (1 par régime + variantes)
-- **Story** : Livrer les 14 presets MVP de la SPEC-FONC §8.
-- **Critères** :
-  - Embarqués via `include_str!` dans le binaire.
-  - Tous passent `selftest`.
+### US-7.1 — MVP presets (originally 14)
+
+- **Priority**: P0 — **Estimation**: M (one per regime + variants)
+  — **Status**: ✅
+- **Story**: Ship the MVP presets defined in SPEC-FUNCTIONAL §8.
+- **Acceptance**:
+  - Embedded via `include_str!` in the binary.
+  - All pass `selftest`.
+  - **Outcome**: 21 presets shipped (the additional ones cover
+    Shenandoah, Serial, Epsilon, and the non-generational ZGC
+    variant).
 
 ### US-7.2 — `gc-forge presets list/show/export`
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : Naviguer le catalogue depuis la CLI.
-- **Critères** :
-  - `list` filtrable par régime/algo.
-  - `show` affiche la fiche pédagogique.
-  - `export` écrit le YAML brut sur disque pour tweaking.
+
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+- **Story**: Browse the catalogue from the CLI.
+- **Acceptance**:
+  - `list` filterable by regime/algorithm.
+  - `show` displays the educational identity card.
+  - `export` writes the raw YAML to disk for tweaking.
 
 ---
 
-## EPIC 8 — Mode batch
+## EPIC 8 — Batch mode
 
-### US-8.1 — Schéma matrix.v1
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : Définir le schéma `gc-forge/matrix.v1` (cf. SPEC-FONC §9.2).
+### US-8.1 — `matrix.v1` schema
 
-### US-8.2 — Génération du produit cartésien et filtres
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : Calculer les cellules à exécuter à partir d'axes et de filtres d'exclusion.
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+- **Story**: Define the `gc-forge/matrix.v1` schema (cf.
+  SPEC-FUNCTIONAL §9.2). JSON Schema published at
+  `schemas/matrix-v1.json`.
 
-### US-8.3 — Exécution parallèle bornée
-- **Priorité** : P0
-- **Estimation** : M
-- **Story** : Lancer N runs en parallèle, agréger résultats, gérer les échecs partiels.
-- **Critères** :
+### US-8.2 — Cartesian product generation and filters
+
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+- **Story**: Compute the cells to execute from axes and
+  exclusion filters.
+
+### US-8.3 — Bounded parallel execution
+
+- **Priority**: P0 — **Estimation**: M — **Status**: 🟡 partial
+- **Story**: Launch N runs in parallel, aggregate results,
+  handle partial failures.
+- **Acceptance**:
   - `--parallel` configurable.
-  - Échec d'une cellule ne bloque pas les autres.
-  - Rapport final consolidé.
+  - A failing cell does not block the others.
+  - Consolidated final report.
+- **Outcome**: sequential execution shipped in 0.1.0;
+  `--parallel` deferred to V1 once Docker concurrency on macOS
+  is characterised.
 
-### US-8.4 — Index CSV
-- **Priorité** : P0
-- **Estimation** : XS
-- **Story** : Émettre `out/index.csv` listant runs et labels.
+### US-8.4 — CSV index
 
-### US-8.5 — Index Parquet (V1)
-- **Priorité** : P1
-- **Estimation** : S
-- **Story** : Variant Parquet pour datasets ML.
+- **Priority**: P0 — **Estimation**: XS — **Status**: ✅
+- **Story**: Emit `<out-dir>/index.csv` listing runs and labels.
+
+### US-8.5 — Parquet index (V1)
+
+- **Priority**: P1 — **Estimation**: S — **Status**: ⏳
+- **Story**: Parquet variant for ML datasets.
 
 ---
 
-## EPIC 9 — Qualité et CI
+## EPIC 9 — Quality and CI
 
 ### US-9.1 — `gc-forge selftest`
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : Exécuter tous les presets, vérifier invariants, rapport résumé.
-- **Critères** : exit code et rapport JSON.
 
-### US-9.2 — Job CI nightly
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : `selftest` exécuté chaque nuit en CI.
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+- **Story**: Run every preset, check invariants, summary report.
+- **Acceptance**: exit code and JSON report.
+
+### US-9.2 — Nightly CI job
+
+- **Priority**: P0 — **Estimation**: S — **Status**: ⏳
+- **Story**: `selftest` runs each night in CI.
+- **Outcome**: not yet wired in `.github/workflows/`. Tracked as
+  part of the post-release hardening pass.
 
 ### US-9.3 — `gc-forge variance-check`
-- **Priorité** : P0
-- **Estimation** : M
-- **Story** : Mesurer CV inter-run sur N runs.
-- **Critères** :
-  - Métriques agrégées calculées : count, sum, p50, p99.
-  - CV calculé et rapporté.
-  - Rapport HTML (V1) — option `--report.html`.
 
-### US-9.4 — Test cross-projet `gc-core-roundtrip`
-- **Priorité** : P0
-- **Estimation** : M
-- **Story** : Un log produit par GC-Forge est parsé par GC-Insight et la séquence d'événements est reproduite.
+- **Priority**: P0 — **Estimation**: M — **Status**: ✅
+- **Story**: Measure inter-run CV over N runs.
+- **Acceptance**:
+  - Aggregated metrics computed: count, sum, p50, p99.
+  - CV computed and reported.
+  - HTML report (V1) — `--report.html` option.
+- **Outcome**: shipped as documented in CLI reference; HTML
+  report deferred to V1.3.
+
+### US-9.4 — `gc-core-roundtrip` cross-project test
+
+- **Priority**: P0 — **Estimation**: M — **Status**: 🟡 partial
+- **Story**: A log produced by GC-Forge is parsed by GC-Insight
+  and the event sequence is reconstructed.
+- **Outcome**: Forge-side counterpart in place; full
+  cross-project enforcement is conditioned on co-development with
+  GC-Insight.
 
 ---
 
-## EPIC 10 — Documentation et release
+## EPIC 10 — Documentation and release
 
 ### US-10.1 — Getting started
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : `doc/user/getting-started.md` qui fait passer un nouveau venu de zéro à un log produit en 10 min.
 
-### US-10.2 — Référence des régimes
-- **Priorité** : P0
-- **Estimation** : M
-- **Story** : `doc/user/regimes.md` détaillant chaque régime, ses paramètres, sa signature.
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+- **Story**: `doc/user/getting-started.md` walks a new user from
+  zero to a produced log in 10 min.
 
-### US-10.3 — Référence du schéma scenario
-- **Priorité** : P0
-- **Estimation** : S
+### US-10.2 — Regime reference
 
-### US-10.4 — Référence CLI
-- **Priorité** : P0
-- **Estimation** : S
+- **Priority**: P0 — **Estimation**: M — **Status**: ✅
+- **Story**: `doc/user/regimes.md` detailing each regime, its
+  parameters, its signature.
 
-### US-10.5 — Pitch produit
-- **Priorité** : P0
-- **Estimation** : S
-- **Story** : `doc/pitch.md` 1 page « pourquoi GC-Forge ».
+### US-10.3 — Scenario schema reference
 
-### US-10.6 — Release `0.1.0`
-- **Priorité** : P0
-- **Estimation** : M
-- **Story** : Build matrix, GitHub Release, crates.io, GHCR.
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
 
-### US-10.7 — Tap Homebrew
-- **Priorité** : P1
-- **Estimation** : S
+### US-10.4 — CLI reference
+
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+
+### US-10.5 — Product pitch
+
+- **Priority**: P0 — **Estimation**: S — **Status**: ✅
+- **Story**: `doc/concepts/overview.md` (formerly `doc/pitch.md`)
+  — one-page summary of why GC-Forge.
+
+### US-10.6 — `0.1.0` release
+
+- **Priority**: P0 — **Estimation**: M — **Status**: 🟡 release
+  pipeline in place; tag and publish are operator-gated.
+- **Story**: Build matrix, GitHub Release, crates.io, GHCR.
+
+### US-10.7 — Homebrew tap
+
+- **Priority**: P1 — **Estimation**: S — **Status**: ⏳
 
 ---
 
-## EPIC 11 — Reproduction et confort (V1)
+## EPIC 11 — Reproduction and ergonomics (V1)
 
-### US-11.1 — `gc-forge mirror <prod.log>` heuristique
-- **Priorité** : P1
-- **Estimation** : L
-- **Story** : Cas d'usage F-REPRO du brief — proposer un scénario miroir à partir d'un log de prod.
+### US-11.1 — `gc-forge mirror <prod.log>` heuristic
+
+- **Priority**: P1 — **Estimation**: L — **Status**: ⏳
+- **Story**: Brief use case F-REPRO — propose a mirror scenario
+  from a production log.
 
 ### US-11.2 — Snippets
-- **Priorité** : P1
-- **Estimation** : S
 
-### US-11.3 — Export JFR
-- **Priorité** : P1
-- **Estimation** : M
+- **Priority**: P1 — **Estimation**: S — **Status**: ⏳
+
+### US-11.3 — JFR export
+
+- **Priority**: P1 — **Estimation**: M — **Status**: ⏳
 
 ---
 
-## EPIC 12 — Élargissement JVMs et algos (V1)
+## EPIC 12 — JVM and collector coverage broadening (V1)
 
-### US-12.1 — Corretto et GraalVM CE
-- **Priorité** : P1
-- **Estimation** : S (Corretto), M (GraalVM)
+### US-12.1 — Corretto and GraalVM CE
+
+- **Priority**: P1 — **Estimation**: S (Corretto), M (GraalVM)
+  — **Status**: ⏳
 
 ### US-12.2 — OpenJ9
-- **Priorité** : P1
-- **Estimation** : XL
-- **Story** : OpenJ9 a un format de log GC distinct — extension du parser et tests dédiés.
+
+- **Priority**: P1 — **Estimation**: XL — **Status**: ⏳
+- **Story**: OpenJ9 has a distinct GC log format — parser
+  extension and dedicated tests.
 
 ### US-12.3 — Shenandoah
-- **Priorité** : P1
-- **Estimation** : M
+
+- **Priority**: P1 → **promoted to MVP** — **Status**: ✅
+- **Outcome**: shipped in 0.1.0 (presets
+  `steady-shenandoah-baseline`, `leak-shenandoah-slow`).
 
 ### US-12.4 — Serial GC
-- **Priorité** : P1
-- **Estimation** : S
 
-### US-12.5 — Régime `compute-batch`
-- **Priorité** : P1
-- **Estimation** : M
+- **Priority**: P1 → **promoted to MVP** — **Status**: ✅
+- **Outcome**: shipped in 0.1.0 (presets
+  `steady-serial-baseline`, `cache-serial-churn`).
+
+### US-12.5 — `compute-batch` regime
+
+- **Priority**: P1 — **Estimation**: M — **Status**: ⏳
 
 ---
 
-## EPIC 13 — V2 stratégique
+## EPIC 13 — V2 strategic
 
-### US-13.1 — Synthèse hybride pour ML
-- **Priorité** : P2
-- **Estimation** : XL
+### US-13.1 — Synthetic-hybrid generation for ML
 
-### US-13.2 — `gc-forge sweep` pour datasets paramétriques
-- **Priorité** : P2
-- **Estimation** : L
+- **Priority**: P2 — **Estimation**: XL — **Status**: ⏳
 
-### US-13.3 — Mode service HTTP
-- **Priorité** : P2
-- **Estimation** : XL
+### US-13.2 — `gc-forge sweep` for parametric datasets
+
+- **Priority**: P2 — **Estimation**: L — **Status**: ⏳
+
+### US-13.3 — HTTP service mode
+
+- **Priority**: P2 — **Estimation**: XL — **Status**: ⏳
 
 ### US-13.4 — Zing / Prime / Oracle JDK
-- **Priorité** : P2
-- **Estimation** : XL (juridique compris)
 
-### US-13.5 — CMS legacy sur JDK 8
-- **Priorité** : P2
-- **Estimation** : L
+- **Priority**: P2 — **Estimation**: XL (legal included) —
+  **Status**: ⏳
+
+### US-13.5 — Legacy CMS on JDK 8
+
+- **Priority**: P2 — **Estimation**: L — **Status**: ⏳
 
 ---
 
-## Synthèse priorisation
+## Prioritisation summary
 
-| Tranche | Epics | US | Estimation cumulée (jours-équivalent) |
-|---------|-------|-----|----------------------------------------|
-| **MVP (P0)** | 1–10 | ~35 US | ~50–60 j ouvrés (cohérent avec 8-10 sem × 5 j × ~12 h soit ~50 j-équivalent) |
-| **V1 (P1)** | 11–12 + reliquat | ~10 US | ~25 j |
-| **V2 (P2)** | 13 | 5 US | ~40 j |
+| Tier | Epics | US count | Cumulative estimation (person-day equivalents) | Delivery |
+|------|-------|----------|------------------------------------------------|----------|
+| **MVP (P0)** | 1–10 | ~35 stories | ~50–60 d (consistent with 8–10 wk × 5 d × ~12 h ≈ ~50 d-equivalent) | All delivered or in late-stage state. |
+| **V1 (P1)** | 11–12 + remainder | ~10 stories | ~25 d | Pending. Shenandoah and Serial were promoted to MVP and removed from V1. |
+| **V2 (P2)** | 13 | 5 stories | ~40 d | Pending. |
 
-## Premier sprint suggéré (sem 1)
+## First sprint (week 1) — historical
 
-US prioritaires à ouvrir en premier :
-1. US-1.1 — workspace Cargo
-2. US-1.2 — projet Maven harness
-3. US-1.3 — image Docker runner (peut commencer en parallèle)
-4. US-2.1 — parser de scénario (squelette typé)
-5. US-3.1 — trait `Regime`
-
-Objectif fin sem 1 : un commit qui fait tourner `gc-forge run` sur un scénario quasi-vide et produit un fichier log/manifeste — même rudimentaire.
+The originally suggested first sprint stories (now delivered):
+1. US-1.1 — Cargo workspace.
+2. US-1.2 — Maven harness project.
+3. US-1.3 — Docker runner image (could start in parallel).
+4. US-2.1 — Scenario parser (typed skeleton).
+5. US-3.1 — `Regime` trait.
