@@ -179,6 +179,18 @@ fn filters_match(combo: &[(String, Value)], filters: &[IndexMap<String, Value>])
     false
 }
 
+/// Renders the matrix JSON Schema (mirror of [`crate::render_schema`] and
+/// [`crate::render_manifest_schema`]). The output is the third frozen wire
+/// format (`gc-forge/matrix.v1`).
+///
+/// # Errors
+/// Fails if `serde_json` cannot serialise the schema (extremely unlikely).
+pub fn render_matrix_schema() -> Result<String> {
+    let schema = schemars::schema_for!(Matrix);
+    let pretty = serde_json::to_string_pretty(&schema)?;
+    Ok(pretty + "\n")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -307,5 +319,36 @@ spec:
         std::fs::write(&path, yaml).unwrap();
         let err = Matrix::from_path(&path).unwrap_err();
         assert!(matches!(err, ScenarioError::UnsupportedApiVersion { .. }));
+    }
+
+    #[test]
+    fn matrix_schema_renders() {
+        let s = render_matrix_schema().unwrap();
+        assert!(s.contains("\"title\": \"Matrix\""));
+    }
+
+    /// Fails if the on-disk matrix schema has drifted from what
+    /// `render_matrix_schema` produces. Regenerate with
+    /// `cargo run -p gc-forge-scenario --bin gen-schema`.
+    #[test]
+    fn matrix_schema_matches_disk() {
+        let path = std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            .parent()
+            .and_then(|p| p.parent())
+            .map(|root| root.join("schemas/matrix-v1.json"))
+            .expect("workspace root");
+        let on_disk = std::fs::read_to_string(&path).unwrap_or_else(|_| {
+            panic!(
+                "{} does not exist — run `cargo run -p gc-forge-scenario --bin gen-schema` to create it.",
+                path.display()
+            )
+        });
+        let fresh = render_matrix_schema().unwrap();
+        assert!(
+            on_disk == fresh,
+            "matrix JSON schema drifted from {}.\n\
+             Regenerate with: cargo run -p gc-forge-scenario --bin gen-schema",
+            path.display()
+        );
     }
 }

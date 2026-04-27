@@ -1,0 +1,64 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Matrix",
+  "description": "Top-level matrix document.",
+  "type": "object",
+  "required": [
+    "apiVersion",
+    "kind",
+    "spec"
+  ],
+  "properties": {
+    "apiVersion": {
+      "type": "string"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "spec": {
+      "$ref": "#/definitions/MatrixSpec"
+    }
+  },
+  "additionalProperties": false,
+  "definitions": {
+    "MatrixSpec": {
+      "type": "object",
+      "required": [
+        "base"
+      ],
+      "properties": {
+        "base": {
+          "description": "Path to the base scenario YAML; can be relative to the matrix file.",
+          "type": "string"
+        },
+        "axes": {
+          "description": "Each entry is `<dotted.path>: [values]`. Iteration order is preserved so users can predict cell order.",
+          "default": {},
+          "type": "object",
+          "additionalProperties": {
+            "type": "array",
+            "items": true
+          }
+        },
+        "seeds": {
+          "description": "Seeds to enumerate. When empty, the base scenario's seed is used once.",
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "uint64",
+            "minimum": 0.0
+          }
+        },
+        "filters": {
+          "description": "Cells matching any filter are excluded. A filter is a map of `<dotted.path>: <value>` — all entries must match for the filter to fire.",
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -9,7 +9,9 @@ SHELL := /bin/bash
 CARGO        ?= cargo
 MVN          ?= mvn
 DOCKER       ?= docker
-IMAGE_TAG    ?= gc-forge-runner:dev-jdk21
+JDK_MAJOR    ?= 21
+DOCKERFILE   ?= docker/jdk$(JDK_MAJOR)/Dockerfile
+IMAGE_TAG    ?= gc-forge-runner:dev-jdk$(JDK_MAJOR)
 HARNESS_JAR  := workload-harness/target/workload-harness.jar
 OUT_DIR      ?= out
 
@@ -47,8 +49,16 @@ dod-gate: ## Run the iteration DoD gate (lint + test + harness verify)
 	bash scripts/dod-gate.sh
 
 .PHONY: docker-image
-docker-image: $(HARNESS_JAR) ## Build the runner Docker image
-	$(DOCKER) build -t $(IMAGE_TAG) .
+docker-image: $(HARNESS_JAR) ## Build the runner Docker image (JDK_MAJOR=17|21, default 21)
+	$(DOCKER) build -f $(DOCKERFILE) -t $(IMAGE_TAG) .
+
+.PHONY: docker-image-jdk17
+docker-image-jdk17: ## Shortcut: docker-image JDK_MAJOR=17
+	$(MAKE) docker-image JDK_MAJOR=17
+
+.PHONY: docker-image-jdk21
+docker-image-jdk21: ## Shortcut: docker-image JDK_MAJOR=21
+	$(MAKE) docker-image JDK_MAJOR=21
 
 $(HARNESS_JAR):
 	$(MVN) -f workload-harness/pom.xml -q -DskipTests package

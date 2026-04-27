@@ -10,7 +10,7 @@
 use std::path::PathBuf;
 use std::process::ExitCode;
 
-use gc_forge_scenario::{render_manifest_schema, render_schema};
+use gc_forge_scenario::{render_manifest_schema, render_matrix_schema, render_schema};
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().collect();
@@ -30,15 +30,24 @@ fn main() -> ExitCode {
             return ExitCode::from(2);
         }
     };
+    let matrix_schema = match render_matrix_schema() {
+        Ok(s) => s,
+        Err(e) => {
+            eprintln!("error rendering matrix schema: {e}");
+            return ExitCode::from(2);
+        }
+    };
 
     let root = workspace_root().unwrap_or_else(|| PathBuf::from("."));
     let scenario_path = root.join("schemas/scenario-v1.json");
     let manifest_path = root.join("schemas/run-manifest-v1.json");
+    let matrix_path = root.join("schemas/matrix-v1.json");
 
     if check_mode {
         let scenario_ok = check(&scenario_path, &scenario_schema);
         let manifest_ok = check(&manifest_path, &manifest_schema);
-        if scenario_ok && manifest_ok {
+        let matrix_ok = check(&matrix_path, &matrix_schema);
+        if scenario_ok && manifest_ok && matrix_ok {
             ExitCode::SUCCESS
         } else {
             ExitCode::from(1)
@@ -48,6 +57,9 @@ fn main() -> ExitCode {
             return ExitCode::from(2);
         }
         if write(&manifest_path, &manifest_schema).is_err() {
+            return ExitCode::from(2);
+        }
+        if write(&matrix_path, &matrix_schema).is_err() {
             return ExitCode::from(2);
         }
         ExitCode::SUCCESS

@@ -1,5 +1,11 @@
-# GC-Forge runner image — embeds the workload harness on Temurin 21.
-# Used by `make demo` (iter 1) and by the DockerRunner backend (iter 3).
+# GC-Forge runner image — embeds the workload harness on Eclipse
+# Temurin 21. Sibling of docker/jdk17/Dockerfile (which targets
+# Temurin 17). Build context is the repository root:
+#
+#     docker build -f docker/jdk21/Dockerfile -t gc-forge-runner:dev-jdk21 .
+#
+# The Makefile target `make docker-image` (default JDK_MAJOR=21)
+# wraps this invocation.
 
 FROM eclipse-temurin:21-jdk-jammy
 

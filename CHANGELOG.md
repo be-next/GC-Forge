@@ -5,6 +5,49 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ## [Unreleased]
 
+### Changed (consistency pass)
+
+- **Runner Dockerfiles relocated** to symmetric per-JDK
+  sub-directories: `Dockerfile` → `docker/jdk21/Dockerfile`,
+  `Dockerfile.jdk17` → `docker/jdk17/Dockerfile`. The previous
+  asymmetry (the JDK-21 variant was implicit at the repository
+  root, the JDK-17 variant was suffixed) is removed. `git mv` was
+  used to preserve history.
+- **Makefile parameterised by `JDK_MAJOR`** (default 21). The
+  `IMAGE_TAG` and the `--file` argument to `docker build` are
+  derived from `JDK_MAJOR`. Two convenience targets are added:
+  `docker-image-jdk17` and `docker-image-jdk21`.
+- **`.github/workflows/release.yml`** publishes both JDK-21 and
+  JDK-17 multi-architecture images on a tag push. The version-only
+  and `:latest` tags continue to point at the JDK-21 image; the
+  JDK-17 image is published under `:<version>-jdk17`.
+- **`.github/dependabot.yml`** now tracks both Dockerfiles
+  independently (one entry per `docker/jdk{17,21}` directory).
+  Labels and commit-message prefixes are per-JDK so a Temurin
+  base-image bump produces two synchronised, identifiable PRs.
+
+### Added (consistency pass)
+
+- **Third frozen wire format published as JSON Schema.**
+  `gc-forge/matrix.v1` now ships a generated schema at
+  `schemas/matrix-v1.json`, alongside the existing `scenario-v1`
+  and `run-manifest-v1` schemas. `gc-forge-scenario` exposes
+  `render_matrix_schema()`; the `gen-schema` binary writes the
+  three files in one invocation; a drift test (`matrix_schema_matches_disk`)
+  fails the build when the on-disk file diverges from the typed
+  model. The previous documentation already referred to *three*
+  frozen formats; the missing schema is now consistent.
+- A `Dependency management` section in `CONTRIBUTING.md` lists the
+  ecosystems and the workflow for Dependabot pull requests.
+
+### Fixed (consistency pass)
+
+- `README.md` no longer contains the dangling `[GC-Insight](#)`
+  link (anchor `#`). The reference is reformulated as italic
+  prose, and a pointer to `doc/concepts/traceability.md` is added
+  for readers who need the contract surface between the two
+  projects.
+
 ### Added
 
 - **Three new GC algorithms and one variant** in `gc-forge-scenario`'s

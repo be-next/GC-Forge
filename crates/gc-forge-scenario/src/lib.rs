@@ -35,7 +35,9 @@ pub use manifest::{
     RunMeta, ScenarioRecord, ValidationRecord, ValidationResult, ValidationStatus,
     MANIFEST_API_VERSION, MANIFEST_KIND,
 };
-pub use matrix::{Matrix, MatrixCell, MatrixSpec, MATRIX_API_VERSION, MATRIX_KIND};
+pub use matrix::{
+    render_matrix_schema, Matrix, MatrixCell, MatrixSpec, MATRIX_API_VERSION, MATRIX_KIND,
+};
 pub use overrides::Override;
 pub use scenario::{
     Distribution, ExpectedClause, GcAlgorithm, GcOptions, GcSpec, HeapConfig, InvariantRule,

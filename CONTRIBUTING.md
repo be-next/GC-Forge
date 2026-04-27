@@ -38,8 +38,8 @@ A short description of each top-level entry follows; refer to
 | `workload-harness/`         | Java workload harness (Maven, fat-jar).                   |
 | `presets/`                  | Fourteen YAML scenarios shipped with the binary.          |
 | `schemas/`                  | JSON Schemas generated from the Rust model.               |
-| `Dockerfile`                | Runner image embedding the harness on Temurin 21.         |
-| `Dockerfile.jdk17`          | Runner image variant on Temurin 17.                       |
+| `docker/jdk21/Dockerfile`   | Runner image embedding the harness on Temurin 21.         |
+| `docker/jdk17/Dockerfile`   | Runner image variant on Temurin 17.                       |
 | `scripts/`                  | Build helpers (`dod-gate.sh`, `build-corpus-g1.sh`).      |
 | `Makefile`                  | Convenience targets (`build`, `docker-image`, `dod-gate`).|
 | `doc/`                      | Documentation (see below).                                |
@@ -121,12 +121,12 @@ Dependency updates are tracked by GitHub Dependabot. The
 configuration lives at [`.github/dependabot.yml`](.github/dependabot.yml)
 and covers four ecosystems:
 
-| Ecosystem        | Surface                                                         |
-|------------------|-----------------------------------------------------------------|
-| `cargo`          | The Rust workspace at the repository root.                      |
-| `maven`          | The Java workload harness under `workload-harness/`.            |
-| `github-actions` | The actions used in `.github/workflows/ci.yml` and `release.yml`. |
-| `docker`         | The runner base image declared in `Dockerfile`.                 |
+| Ecosystem        | Surface                                                                |
+|------------------|------------------------------------------------------------------------|
+| `cargo`          | The Rust workspace at the repository root.                             |
+| `maven`          | The Java workload harness under `workload-harness/`.                   |
+| `github-actions` | The actions used in `.github/workflows/ci.yml` and `release.yml`.      |
+| `docker` (×2)    | The two runner base images at `docker/jdk21/Dockerfile` and `docker/jdk17/Dockerfile`. |
 
 Dependabot runs weekly (Monday morning, Europe/Paris) and groups
 minor and patch updates of each ecosystem into a single pull
@@ -135,10 +135,9 @@ typically require behavioural review.
 
 Dependabot pull requests follow the same Definition-of-Done gate as
 human-authored changes; merging is conditioned on a green CI run
-and a maintainer's approval. The `Dockerfile.jdk17` variant at the
-repository root is not auto-tracked (Dependabot scans only the
-canonical `Dockerfile`); when the Temurin base image is bumped, the
-JDK-17 variant is updated by hand in the same PR.
+and a maintainer's approval. The two runner images are tracked
+independently, so a Temurin base-image bump produces two
+synchronised pull requests (one per JDK major).
 
 ## Issue tracking
 

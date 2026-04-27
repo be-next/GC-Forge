@@ -6,9 +6,10 @@ regime)` tuple, GC-Forge runs a parameterised workload on a real
 Java Virtual Machine, captures the unified `-Xlog:gc*` output, and
 emits a hash-anchored manifest sufficient to reproduce the run.
 
-GC-Forge is the counterpart of [GC-Insight](#): where Insight
-analyses GC logs, Forge produces them on demand with documented
-ground truth.
+GC-Forge is the counterpart of *GC-Insight*: where Insight analyses
+GC logs, Forge produces them on demand with documented ground
+truth. The contract surface between the two projects is documented
+in [`doc/concepts/traceability.md`](doc/concepts/traceability.md).
 
 ## Status
 

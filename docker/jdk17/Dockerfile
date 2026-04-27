@@ -1,6 +1,12 @@
-# GC-Forge runner image — embeds the workload harness on Temurin 17.
-# Sibling of Dockerfile (which targets Temurin 21). Used to produce the
-# JDK-17 half of the GC-Insight learning corpus.
+# GC-Forge runner image — embeds the workload harness on Eclipse
+# Temurin 17. Sibling of docker/jdk21/Dockerfile (which targets
+# Temurin 21). Build context is the repository root:
+#
+#     docker build -f docker/jdk17/Dockerfile -t gc-forge-runner:dev-jdk17 .
+#
+# The Makefile target `make docker-image JDK_MAJOR=17` wraps this
+# invocation. Used in particular to produce the JDK-17 half of the
+# learning corpus consumed by GC-Insight.
 
 FROM eclipse-temurin:17-jdk-jammy
 

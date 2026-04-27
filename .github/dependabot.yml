@@ -2,18 +2,16 @@
 #   • Cargo workspace (Rust crates),
 #   • Maven workload-harness (Java),
 #   • GitHub Actions used in ci.yml and release.yml,
-#   • Docker base image of the runner.
+#   • Docker runner base images (Temurin 21 and 17).
 #
 # Each ecosystem opens at most a small batch of PRs per week and groups
 # minor/patch updates together so the review surface stays manageable.
 # Major-version bumps still land as separate PRs because they often
 # require behavioural review.
 #
-# Note on Dockerfile.jdk17: Dependabot scans `Dockerfile` in the listed
-# directory; the JDK-17 variant currently lives at the repository root
-# and must be propagated by hand when the Temurin base image bumps.
-# Move it under docker/jdk17/Dockerfile if automated tracking becomes
-# desirable.
+# The two runner images live under docker/jdk21/ and docker/jdk17/.
+# Each Dockerfile is tracked by its own Dependabot entry so a Temurin
+# base-image bump produces synchronised pull requests.
 
 version: 2
 
@@ -82,9 +80,9 @@ updates:
           - minor
           - patch
 
-  # ── Runner Docker image ─────────────────────────────────────────────
+  # ── Runner Docker image — Temurin 21 ────────────────────────────────
   - package-ecosystem: docker
-    directory: "/"
+    directory: "/docker/jdk21"
     schedule:
       interval: weekly
       day: monday
@@ -94,5 +92,22 @@ updates:
     labels:
       - dependencies
       - docker
+      - jdk21
     commit-message:
-      prefix: "deps(docker)"
+      prefix: "deps(docker-jdk21)"
+
+  # ── Runner Docker image — Temurin 17 ────────────────────────────────
+  - package-ecosystem: docker
+    directory: "/docker/jdk17"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - docker
+      - jdk17
+    commit-message:
+      prefix: "deps(docker-jdk17)"

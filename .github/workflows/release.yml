@@ -195,13 +195,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push (multi-arch)
+      - name: Build and push JDK 21 image (multi-arch)
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: Dockerfile
+          file: docker/jdk21/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
+            ghcr.io/${{ github.repository_owner }}/gc-forge:${{ steps.ver.outputs.version }}-jdk21
             ghcr.io/${{ github.repository_owner }}/gc-forge:${{ steps.ver.outputs.version }}
             ghcr.io/${{ github.repository_owner }}/gc-forge:latest
+
+      - name: Build and push JDK 17 image (multi-arch)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/jdk17/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/gc-forge:${{ steps.ver.outputs.version }}-jdk17
