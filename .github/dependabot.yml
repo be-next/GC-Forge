@@ -1,0 +1,98 @@
+# Dependabot configuration — keeps four dependency surfaces current:
+#   • Cargo workspace (Rust crates),
+#   • Maven workload-harness (Java),
+#   • GitHub Actions used in ci.yml and release.yml,
+#   • Docker base image of the runner.
+#
+# Each ecosystem opens at most a small batch of PRs per week and groups
+# minor/patch updates together so the review surface stays manageable.
+# Major-version bumps still land as separate PRs because they often
+# require behavioural review.
+#
+# Note on Dockerfile.jdk17: Dependabot scans `Dockerfile` in the listed
+# directory; the JDK-17 variant currently lives at the repository root
+# and must be propagated by hand when the Temurin base image bumps.
+# Move it under docker/jdk17/Dockerfile if automated tracking becomes
+# desirable.
+
+version: 2
+
+updates:
+  # ── Rust workspace ──────────────────────────────────────────────────
+  - package-ecosystem: cargo
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - rust
+    commit-message:
+      prefix: "deps(rust)"
+    groups:
+      rust-minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
+  # ── Java workload harness ───────────────────────────────────────────
+  - package-ecosystem: maven
+    directory: "/workload-harness"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - java
+    commit-message:
+      prefix: "deps(java)"
+    groups:
+      java-minor-and-patch:
+        applies-to: version-updates
+        update-types:
+          - minor
+          - patch
+
+  # ── GitHub Actions used by CI and release workflows ─────────────────
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 5
+    labels:
+      - dependencies
+      - ci
+    commit-message:
+      prefix: "deps(ci)"
+    groups:
+      actions-all:
+        applies-to: version-updates
+        update-types:
+          - major
+          - minor
+          - patch
+
+  # ── Runner Docker image ─────────────────────────────────────────────
+  - package-ecosystem: docker
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "06:00"
+      timezone: Europe/Paris
+    open-pull-requests-limit: 3
+    labels:
+      - dependencies
+      - docker
+    commit-message:
+      prefix: "deps(docker)"

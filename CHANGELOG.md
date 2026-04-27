@@ -42,6 +42,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
   documentation-language policy (English for user-facing material,
   French for internal specifications), the Definition-of-Done
   gate, and the branching model.
+- `.github/dependabot.yml` — automated dependency-update
+  surveillance for the four ecosystems present in the repository
+  (Cargo workspace, Maven workload harness, GitHub Actions, Docker
+  base image). Runs weekly and groups minor/patch updates per
+  ecosystem to keep the review surface manageable; major bumps
+  land as separate pull requests. A *Dependency management*
+  section was added to `CONTRIBUTING.md` describing the workflow
+  and the exception for `Dockerfile.jdk17` (not auto-tracked).
 
 ### Changed
 

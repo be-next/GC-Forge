@@ -115,6 +115,31 @@ Pull requests are merged in fast-forward mode after the DoD gate
 turns green and at least one repository maintainer has approved the
 change.
 
+## Dependency management
+
+Dependency updates are tracked by GitHub Dependabot. The
+configuration lives at [`.github/dependabot.yml`](.github/dependabot.yml)
+and covers four ecosystems:
+
+| Ecosystem        | Surface                                                         |
+|------------------|-----------------------------------------------------------------|
+| `cargo`          | The Rust workspace at the repository root.                      |
+| `maven`          | The Java workload harness under `workload-harness/`.            |
+| `github-actions` | The actions used in `.github/workflows/ci.yml` and `release.yml`. |
+| `docker`         | The runner base image declared in `Dockerfile`.                 |
+
+Dependabot runs weekly (Monday morning, Europe/Paris) and groups
+minor and patch updates of each ecosystem into a single pull
+request. Major-version bumps land as separate PRs because they
+typically require behavioural review.
+
+Dependabot pull requests follow the same Definition-of-Done gate as
+human-authored changes; merging is conditioned on a green CI run
+and a maintainer's approval. The `Dockerfile.jdk17` variant at the
+repository root is not auto-tracked (Dependabot scans only the
+canonical `Dockerfile`); when the Temurin base image is bumped, the
+JDK-17 variant is updated by hand in the same PR.
+
 ## Issue tracking
 
 Bug reports and feature requests are tracked in GitHub Issues.
