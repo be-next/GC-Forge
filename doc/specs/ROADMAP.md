@@ -1,224 +1,330 @@
-# GC-Forge — Roadmap
+# GC-Forge — roadmap
 
-> **Référence** : brief du 25 avril 2026, §8.3.
-> **Cible MVP** : MVP étendu — 8 à 10 semaines en solo temps partiel (~12 h/semaine ouvrées).
+> **Reference**: brief of 25 April 2026, §8.3.
+> **MVP target as scoped**: extended MVP — 8 to 10 weeks solo
+> part-time (~12 h / week of working time).
+> **Status (2026-04-27)**: phases 0 through 3 are delivered; the
+> 0.1.0 line is functionally complete on `main`. Phase 4 (native
+> runner) is the next step. Sections 3–6 below are kept as a
+> historical record of what was scoped versus what was delivered.
 
-## 1. Principe directeur
+## 1. Guiding principle
 
-Livrer en MVP un outil **utile pour le cas d'usage prioritaire** (test et validation de GC-Insight) avec **tous les axes essentiels** (3 algos, 2 versions JDK, 7 régimes, manifeste riche, mode batch). Reporter en V1 ce qui ajoute de la couverture (autres JVMs, autres algos, mode natif, BYO-JVM) plutôt que ce qui ajoute de la valeur centrale.
+Deliver an MVP that is **useful for the priority use case**
+(testing and validating GC-Insight) with **all the essential
+axes** (multiple collectors, two JDK versions, seven regimes,
+rich manifest, batch mode). Defer to V1 anything that adds JVM
+coverage (other JVMs, native runner, BYO-JVM) rather than core
+value.
 
-> **Note de cadrage** : le brief §9 vise 4-6 semaines pour le MVP. Cette roadmap propose 8-10 semaines pour un **MVP étendu** retenu en cadrage initial (3 algos vs 1-2, 2 versions JDK vs 1, 7 régimes vs ~5, 14 presets, métadonnées riches dès la première version). Une trajectoire courte 4-6 semaines reste atteignable et est documentée en §10 (« sensibilités »). C'est au commanditaire de trancher entre les deux trajectoires en fonction de l'urgence vs. de la couverture initiale.
+> **Scoping note**. The brief §9 targets 4–6 weeks for the MVP.
+> This roadmap proposed 8–10 weeks for an **extended MVP**
+> agreed at cadrage time (more collectors, two JDK versions,
+> seven regimes, rich metadata from day one). The shorter 4–6
+> week trajectory remains documented in §10 (*sensitivities*).
+> The choice between the two trajectories is the maintainer's,
+> trading urgency against initial coverage.
 
-## 2. Vue d'ensemble des phases
+## 2. Phase overview
 
-| Phase | Durée | Effort cumulé | Sortie |
-|-------|-------|---------------|--------|
-| **Phase 0 — Setup** | 1 semaine | 1 sem | Workspace Cargo, harness Maven, CI vide-but-verte, premier `hello-world` JVM-en-Docker. |
-| **Phase 1 — Tronc commun** | 2 semaines | 3 sem | `gc-forge run scenario.yaml` produit un log + manifeste pour 1 régime (steady-state). |
-| **Phase 2 — Régimes et algos** | 3 semaines | 6 sem | 7 régimes implémentés × 3 algos (G1/ZGC/Parallel), 14 presets, validation par invariants. |
-| **Phase 3 — Batch, qualité, doc** | 2 semaines | 8 sem | `gc-forge batch`, `selftest`, `variance-check`, doc utilisateur, release `0.1.0`. |
-| **Phase 4 (option)** | 2 semaines | 10 sem | Mode natif (NativeRunner), polish CLI, intégration CI GC-Insight. **MVP = fin de phase 4 si capacité.** |
-| **V1** | T+3 mois | — | Shenandoah, Serial, Corretto, OpenJ9 ; mirror ; variance-check ; Homebrew. |
-| **V2** | T+6 mois | — | Synthèse hybride, Zing/Prime, sweep ML, mode service. |
+| Phase | Duration | Cumulative effort | Output | Status |
+|-------|----------|-------------------|--------|--------|
+| **Phase 0 — Setup** | 1 week | 1 wk | Cargo workspace, Maven harness, empty-but-green CI, first JVM-in-Docker `hello-world`. | **Delivered.** |
+| **Phase 1 — Core trunk** | 2 weeks | 3 wk | `gc-forge run scenario.yaml` produces a log + manifest for one regime (steady-state). | **Delivered.** |
+| **Phase 2 — Regimes and collectors** | 3 weeks | 6 wk | Seven regimes × initial three collectors (G1/ZGC/Parallel), shipped presets, invariant-based validation. | **Delivered.** Scope expanded during implementation to six collectors total (+Shenandoah, +Serial, +Epsilon). |
+| **Phase 3 — Batch, quality, doc, release `0.1.0`** | 2 weeks | 8 wk | `gc-forge batch`, `selftest`, `variance-check`, user docs, `0.1.0` release. | **Delivered** (release pipeline ready locally; tag and publish are operator-gated). |
+| **Phase 4 (optional)** | 2 weeks | 10 wk | Native runner, CLI polish, GC-Insight CI integration. | **Pending.** Decision is the maintainer's. |
+| **V1** | T+3 months | — | Corretto, GraalVM, OpenJ9 ; mirror ; HTML variance-check ; Homebrew. | **Pending.** Shenandoah and Serial were promoted from V1 to MVP during implementation. |
+| **V2** | T+6 months | — | Synthetic-hybrid generation, Zing/Prime, ML sweep, service mode. | **Pending.** |
 
-## 3. Phase 0 — Setup (semaine 1)
+## 3. Phase 0 — Setup (week 1)
 
-**Objectif** : un environnement de dev fonctionnel et une CI verte sur du code minimal.
+**Objective**: a functional development environment and a green
+CI on minimal code.
 
-**Livrables** :
-- Workspace Cargo avec les crates de §2.1 SPEC-TECH (squelettes).
-- `workload-harness/pom.xml` qui build un fat-jar « hello-world » (boucle d'allocation triviale).
-- GitHub Actions : `lint`, `test`, `build`. Verts sur main.
-- `gc-forge --version` fonctionne.
-- `Dockerfile` pour `ghcr.io/<org>/gc-forge-runner:dev-jdk21` (Temurin 21 + harness embarqué).
-- README dev avec `make bootstrap`, `make test`, `make demo`.
+**Deliverables**:
+- Cargo workspace with the crates from SPEC-TECHNICAL §2.1
+  (skeletons).
+- `workload-harness/pom.xml` building a "hello-world" fat-jar
+  (trivial allocation loop).
+- GitHub Actions: `lint`, `test`, `build`, green on `main`.
+- `gc-forge --version` works.
+- `Dockerfile` for `gc-forge-runner:dev-jdk21` (Temurin 21 +
+  embedded harness).
+- Developer README with `make bootstrap`, `make test`, `make
+  demo`.
 
-**Critères de sortie** : un commit qui passe la CI et qui permet de lancer `make demo` et de voir un log GC sortir d'un container Docker, même rudimentaire.
+**Exit criteria**: a commit that passes CI and lets `make demo`
+emit a GC log from a Docker container, however rudimentary.
 
-**Risques** : multi-arch Docker sur Apple Silicon — prévoir 1-2 jours de buffer.
+**Risks at the time**: multi-arch Docker on Apple Silicon — 1–2
+days of buffer.
 
-## 4. Phase 1 — Tronc commun (semaines 2–3)
+**Outcome (2026-04-27)**: delivered as scoped.
 
-**Objectif** : livrer la chaîne complète sur **un seul** régime (`steady-state-healthy`) et un seul algo (G1 sur Temurin 21).
+## 4. Phase 1 — Core trunk (weeks 2–3)
 
-**Périmètre** :
-1. Parser de scénario YAML (`gc-forge-scenario`) avec validation par typage Rust + JSON Schema généré.
-2. `extends` + `--override` fonctionnels.
-3. `DockerRunner` : peut lancer une JVM Docker, passer des flags, capturer un log.
-4. Harness Java `SteadyStateRegime` paramétrable (allocation_rate, live_set, lifetime).
-5. `gc-forge run scenario.yaml` produit log + manifeste valides.
-6. Manifeste contient scénario résolu + jvm.version + sha256 du log + sha256 du jar.
-7. Premier preset : `steady-g1-baseline`.
-8. `gc-forge lint` (validation sans exécution).
+**Objective**: deliver the full chain on **one** regime
+(`steady-state-healthy`) with a single collector (G1 on Temurin
+21).
 
-**Critères de sortie** :
-- `gc-forge run presets/steady-g1-baseline.yaml` finit en < 2 min, produit un log valide G1 + un manifeste complet.
-- `gc-forge lint` détecte un YAML invalide.
-- Test d'intégration CI qui exécute le preset en docker-in-docker.
+**Scope**:
+1. YAML scenario parser (`gc-forge-scenario`) with Rust-typed
+   validation and a generated JSON Schema.
+2. `extends` and `--override` operational.
+3. `DockerRunner`: launches a Docker JVM, passes flags, captures
+   the log.
+4. Java harness `SteadyStateRegime` parameterised
+   (`allocation_rate`, `live_set`, `lifetime`).
+5. `gc-forge run scenario.yaml` produces a valid log and
+   manifest.
+6. Manifest contains the resolved scenario, JVM version, log
+   SHA-256, and harness JAR SHA-256.
+7. First preset: `steady-g1-baseline`.
+8. `gc-forge lint` (validation without execution).
 
-**Anti-goals** : pas de validation post-run (Phase 2), pas de batch (Phase 3), pas d'autre algo.
+**Exit criteria**:
+- `gc-forge run presets/steady-g1-baseline.yaml` finishes in
+  < 2 min, producing a valid G1 log and a complete manifest.
+- `gc-forge lint` rejects invalid YAML.
+- CI integration test running the preset in docker-in-docker.
 
-## 5. Phase 2 — Régimes et algos (semaines 4–6)
+**Anti-goals**: no post-run validation (Phase 2), no batch
+(Phase 3), no other collector.
 
-**Objectif** : couvrir les 7 régimes × 3 algos et la validation par invariants.
+**Outcome**: delivered as scoped.
 
-**Itérations recommandées** (1 itération = 1 semaine) :
+## 5. Phase 2 — Regimes and collectors (weeks 4–6)
 
-### Sprint 4 — Algorithmes
-- ZGC generational (flags + capture).
+**Objective**: cover the seven regimes × three initial
+collectors with invariant-based validation.
+
+**Recommended sprints** (1 sprint = 1 week):
+
+### Sprint 4 — Algorithms
+- Generational ZGC (flags + capture).
 - Parallel.
-- Tests unitaires par algo : un même `steady-state` doit produire un log conforme sur les 3 algos.
-- Presets baseline pour ZGC et Parallel.
+- Per-collector unit tests: a single `steady-state` must produce
+  a conformant log on the three collectors.
+- Baseline presets for ZGC and Parallel.
 
-### Sprint 5 — Régimes 1/2
-Implémentation et presets :
-- `allocation-burst` (R2)
-- `humongous-pressure` (R3)
-- `cache-churn` (R5)
+### Sprint 5 — Regimes 1/2
+Implementation and presets:
+- `allocation-burst` (R2).
+- `humongous-pressure` (R3).
+- `cache-churn` (R5).
 
-Pour chaque régime : code Java du harness, code Rust des invariants, preset YAML, test d'intégration.
+For each regime: harness Java code, Rust invariants, YAML
+preset, integration test.
 
-### Sprint 6 — Régimes 2/2 + validation
-Implémentation :
-- `slow-leak` (R4)
-- `mixed-gc-pathological` (R6)
-- `microservice-stop-and-go` (R7)
-- `gc-forge validate <log> --manifest <m.yaml>` opérationnel pour tous les régimes.
-- Parser de log GC partagé via `gc-core` (au moins suffisant pour les invariants — pas un parser exhaustif).
+### Sprint 6 — Regimes 2/2 + validation
+Implementation:
+- `slow-leak` (R4).
+- `mixed-gc-pathological` (R6).
+- `microservice-stop-and-go` (R7).
+- `gc-forge validate <log> --manifest <m.yaml>` operational for
+  every regime.
+- Shared GC-log parser via `gc-core` (sufficient for the
+  invariants; not an exhaustive parser).
 
-**Critères de sortie phase 2** :
-- 14 presets MVP livrés et passants.
-- `gc-forge validate` retourne 0 sur les 14 presets quand exécutés à seed nominal.
-- Documentation utilisateur partielle (1 paragraphe par régime + paramètres).
-- `gc-core-roundtrip` test inter-projets : un log produit par GC-Forge est parsé par le proto-Insight et reproduit la séquence d'événements.
+**Phase 2 exit criteria**:
+- 14 MVP presets shipped and passing.
+- `gc-forge validate` returns 0 on the 14 presets when run with
+  the nominal seed.
+- Partial user documentation (one paragraph per regime +
+  parameters).
+- `gc-core-roundtrip` cross-project test: a log produced by
+  GC-Forge is parsed by the proto-Insight parser and the
+  reconstructed event sequence matches.
 
-**Anti-goals** : pas de variance-check (Phase 3), pas de mode natif (Phase 4).
+**Anti-goals**: no `variance-check` (Phase 3), no native runner
+(Phase 4).
 
-## 6. Phase 3 — Batch, qualité, doc, release `0.1.0` (semaines 7–8)
+**Outcome**: delivered as scoped, plus three additional
+collectors (Shenandoah, Serial, Epsilon) and seven additional
+presets — promoted from V1 to MVP because they reuse the same
+workload harness and the same parser. Final shipped catalogue:
+21 presets across six collectors.
 
-**Objectif** : packaging et qualité de release.
+## 6. Phase 3 — Batch, quality, documentation, `0.1.0` release (weeks 7–8)
 
-**Livrables** :
-1. `gc-forge batch matrix.yaml` avec parallélisation contrôlée.
-2. `gc-forge selftest` : exécute tous les presets, vérifie invariants, rapport résumé.
-3. `gc-forge variance-check <preset> --runs N` : mesure CV inter-run.
+**Objective**: release packaging and quality.
+
+**Deliverables**:
+1. `gc-forge batch matrix.yaml` with controlled parallelism.
+2. `gc-forge selftest`: runs every preset, checks invariants,
+   summary report.
+3. `gc-forge variance-check <preset> --runs N`: measures
+   inter-run CV.
 4. `gc-forge presets list/show/export`.
-5. Documentation utilisateur complète :
-   - `doc/user/getting-started.md`
-   - `doc/user/regimes.md` (un paragraphe par régime + paramètres + signature attendue)
-   - `doc/user/scenario-reference.md` (référence du schéma)
-   - `doc/user/cli-reference.md` (sous-commandes)
-6. CI nightly qui exécute `selftest` + `variance-check`.
-7. Release `0.1.0` :
-   - GitHub Release avec binaires Linux x64/arm64, macOS x64/arm64.
-   - Image Docker `ghcr.io/<org>/gc-forge:0.1.0` et variantes runner-jdk{17,21}.
-   - Crates publiés sur crates.io.
-   - CHANGELOG, README pitch produit.
-8. **Pitch écrit** : `doc/pitch.md` 1 page « pourquoi GC-Forge ».
+5. Complete user documentation:
+   - `doc/user/getting-started.md`,
+   - `doc/user/regimes.md` (one paragraph per regime + parameters
+     + expected signature),
+   - `doc/user/scenario-reference.md` (schema reference),
+   - `doc/user/cli-reference.md` (subcommands).
+6. Nightly CI running `selftest` and `variance-check`.
+7. Release `0.1.0`:
+   - GitHub Release with Linux x64/arm64 and macOS x64/arm64
+     binaries.
+   - Docker images `ghcr.io/<org>/gc-forge:0.1.0-jdk{17,21}` and
+     `:latest`.
+   - Crates published to crates.io.
+   - CHANGELOG and pitch document.
+8. **Written pitch**: one-page document under
+   [`doc/concepts/overview.md`](../concepts/overview.md).
 
-**Critères de sortie** :
-- Un nouvel utilisateur peut installer GC-Forge, lancer un preset et lire le manifeste sans support.
-- `gc-forge selftest` passe en CI nightly.
-- Variance inter-run mesurée et documentée pour les 14 presets.
+**Exit criteria**:
+- A new user can install GC-Forge, run a preset, and read the
+  manifest without support.
+- `gc-forge selftest` is green in nightly CI.
+- Inter-run variance measured and documented for the shipped
+  presets.
 
-**À ce stade le brief §9 doit être démontrable** :
-- Un dev Rust comprend l'archi → SPEC-TECH suffit.
-- Choix structurants explicites → SPEC-FONC + SPEC-TECH OK.
-- Cohérence GC-Insight démontrée → `gc-core-roundtrip` test.
-- Pitch interne ou tiers → `doc/pitch.md`.
+**At this point brief §9 must be demonstrable**:
+- A Rust developer understands the architecture →
+  `SPEC-TECHNICAL.md` is sufficient.
+- Structural choices are explicit → `SPEC-FUNCTIONAL.md` and
+  `SPEC-TECHNICAL.md` together cover the points.
+- GC-Insight consistency is demonstrated → `gc-core-roundtrip`
+  test and the
+  [traceability matrix](../concepts/traceability.md).
+- Internal or external pitch → [`overview.md`](../concepts/overview.md).
 
-## 7. Phase 4 — Mode natif et polish (semaines 9–10)
+**Outcome**: delivered as scoped, with the additional release
+plumbing produced during the consistency pass (multi-arch
+Docker images for both JDK 17 and JDK 21, Dependabot, etc.).
+The four operator-gated steps (`git push`, tag creation,
+`release` environment approvals, GitHub Release promotion) are
+documented in
+[`doc/process/orchestration.md`](../process/orchestration.md).
 
-**Objectif** : éliminer la dépendance Docker pour les utilisateurs qui ne l'ont pas.
+## 7. Phase 4 — Native runner and polish (weeks 9–10)
 
-**Livrables** :
-1. `NativeRunner` : téléchargement Adoptium, vérif checksums, cache `~/.gc-forge/jvms/`.
-2. Sélecteur auto Docker/Native : utilise Docker si dispo, sinon Native, configurable par flag.
-3. Tests d'intégration sur les deux runners pour les 14 presets.
-4. Polish CLI : messages d'erreur, suggestions, complétion shell (bash/zsh/fish).
-5. Tap Homebrew (`brew install <tap>/gc-forge`).
-6. Intégration CI GC-Insight : job `regenerate-corpus-reference` opérationnel et bloquant.
+**Objective**: remove the Docker dependency for users who do not
+have it.
 
-**Critères de sortie** : MVP livré.
+**Deliverables**:
+1. `NativeRunner`: Adoptium download, checksum verification,
+   cache under `~/.gc-forge/jvms/`.
+2. Auto Docker/native selector: uses Docker if available,
+   otherwise native; configurable by flag.
+3. Integration tests on both runners for the shipped presets.
+4. CLI polish: error messages, suggestions, shell completion
+   (bash/zsh/fish).
+5. Homebrew tap (`brew install <tap>/gc-forge`).
+6. GC-Insight CI integration: a `regenerate-corpus-reference`
+   job operational and blocking.
 
-**Phase 4 = optionnelle** dans le sens où GC-Forge `0.1.0` (fin Phase 3) est utilisable et utile. Phase 4 fait passer en `0.2.0` avec mode natif et finalise l'intégration GC-Insight.
+**Exit criteria**: MVP delivered.
 
-## 8. V1 — Couverture et confort (T+3 mois après MVP)
+**Phase 4 = optional** in the sense that `0.1.0` (end of Phase
+3) is usable and useful. Phase 4 advances to `0.2.0` with the
+native runner and finalises the GC-Insight integration.
 
-**Périmètre V1** :
+**Status**: not started. Triggering it is the maintainer's
+decision.
 
-### V1.0 — Élargissement JVMs
-- Corretto 17 et 21 (effectivement Temurin avec une étiquette différente — peu d'effort).
-- OpenJ9 17 et 21 — **format de log différent**, demande extension du parser `gc-core`. Effort sérieux.
-- GraalVM CE 21 (HotSpot variant — peu d'effort).
+## 8. V1 — Coverage and ergonomics (T+3 months after MVP)
 
-### V1.1 — Algos manquants
-- Shenandoah (effort moyen — proche de ZGC en termes de tooling).
-- Serial (trivial).
-- Compute-batch régime supplémentaire.
+### V1.0 — JVM coverage broadening
+- **Corretto** 17 and 21 (effectively Temurin under another
+  label; small effort).
+- **OpenJ9** 17 and 21 — **different log format**, requires
+  extending the `gc-core` parser. Significant effort. The single
+  V1 item that needs more than trivial work.
+- **GraalVM CE 21** (HotSpot variant — small effort).
 
-### V1.2 — Reproduction de pathologies
-- `gc-forge mirror <prod.log>` heuristique (cas d'usage F-REPRO du brief).
-- Onboarding : « collez votre log, je vous propose un scénario miroir ».
+### V1.1 — Pathology mirroring
+- `gc-forge mirror <prod.log>`: heuristic that proposes a mirror
+  scenario from a customer's production log (use case F-REPRO of
+  the brief).
+- Onboarding: "paste your log, I propose a mirror scenario".
 
-### V1.3 — Confort
-- Export JFR (`capture_jfr: true` dans scenario).
-- Sortie HTML auto-contenue de variance-check (`--report.html`).
-- Snippets (option `--snippet humongous`).
+### V1.2 — Ergonomics
+- JFR export (`capture_jfr: true` in the scenario).
+- Self-contained HTML output for `variance-check`
+  (`--report.html`).
+- Snippet shortcuts (`--snippet humongous`).
 
-## 9. V2 — Stratégique (T+6 mois)
+> **Note on the original V1.1 scope.** The earlier roadmap also
+> placed Shenandoah and Serial in V1.1. They were brought
+> forward to the MVP during implementation (they are available
+> in Temurin and require no parser change), so the V1 focus is
+> now JVM coverage rather than collector coverage.
 
-**Pistes** :
-- **Synthèse hybride** : générateur Rust calibré sur traces réelles, pour datasets ML.
-- **Mode `sweep`** : balayage paramétrique sur N seeds.
-- **Zing / Prime / Oracle JDK** sous condition de licence.
-- **Mode service** : daemon HTTP qui produit des logs à la demande (SaaS interne).
-- **CMS legacy** sur JDK 8 pour cas historiques (effort spécifique).
+## 9. V2 — Strategic (T+6 months)
 
-## 10. Estimation et cadence
+**Tracks**:
+- **Synthetic-hybrid generation**: Rust generator calibrated on
+  real traces, for ML datasets.
+- **`sweep` mode**: parametric sweep across N seeds.
+- **Zing / Prime / Oracle JDK** subject to licensing.
+- **Service mode**: HTTP daemon producing logs on demand
+  (internal SaaS).
+- **Legacy CMS** on JDK 8 for historical cases (specific
+  effort).
 
-**Hypothèse de capacité** : 12 h ouvrées / semaine en solo (compatible « temps partiel » du brief). Avec une marge de 20 %, capacité réaliste = **9-10 h utiles / semaine**.
+## 10. Estimation and cadence
 
-| Phase | Durée calendaire | Effort utile | Buffer |
-|-------|------------------|--------------|--------|
-| 0 | 1 sem | 8 h | 2 h |
-| 1 | 2 sem | 18 h | 4 h |
-| 2 | 3 sem | 27 h | 6 h |
-| 3 | 2 sem | 18 h | 4 h |
-| 4 | 2 sem | 18 h | 4 h |
-| **Total** | **10 sem** | **89 h** | **20 h** |
+**Capacity assumption**: 12 h / week solo (compatible with the
+brief's "part-time"). With a 20 % margin, realistic capacity =
+**9–10 h useful / week**.
 
-**Sensibilités** :
-- +30 % si OpenJ9 entre dans le MVP (parsing différent).
-- +20 % si la variance inter-host pose problème et impose un travail de stabilisation (CPU pinning, etc.).
-- −10 à −20 % si on coupe Phase 4 (mode natif reporté en V1.0).
-- **−40 % vers une trajectoire « MVP brief original » (4-6 sem)** : 1 algo (G1 only), 1 JDK (21 only), 5 régimes (couper R5/R6/R7), pas de mode batch, pas de Phase 3 polish ni Phase 4. Périmètre : `gc-forge run scenario.yaml` avec validation a posteriori, 5 presets. C'est un démonstrateur, pas encore un outil de validation CI.
+| Phase | Calendar duration | Useful effort | Buffer |
+|-------|-------------------|---------------|--------|
+| 0 | 1 wk | 8 h | 2 h |
+| 1 | 2 wk | 18 h | 4 h |
+| 2 | 3 wk | 27 h | 6 h |
+| 3 | 2 wk | 18 h | 4 h |
+| 4 | 2 wk | 18 h | 4 h |
+| **Total** | **10 wk** | **89 h** | **20 h** |
 
-**Recommandation** : viser fin Phase 3 (release `0.1.0`) à 8 semaines, garder Phase 4 comme optionnelle si la capacité tient. Si urgence ou capacité réduite, basculer sur la trajectoire courte explicitée ci-dessus.
+**Sensitivities**:
+- +30 % if OpenJ9 enters the MVP (different log format).
+- +20 % if inter-host variance becomes problematic and demands
+  stabilisation work (CPU pinning, etc.).
+- −10 to −20 % if Phase 4 is dropped (native runner deferred to
+  V1.0).
+- **−40 % toward a "brief-original MVP" trajectory (4–6 weeks)**:
+  one collector (G1 only), one JDK (21 only), five regimes
+  (drop R5/R6/R7), no batch mode, no Phase 3 polish, no Phase 4.
+  Scope: `gc-forge run scenario.yaml` with post-run validation,
+  five presets. This is a demonstrator, not yet a CI-grade
+  validation tool.
 
-## 11. Jalons et points de décision
+**Recommendation**: aim for end of Phase 3 (release `0.1.0`) at
+8 weeks; keep Phase 4 optional if capacity allows. If urgent or
+capacity-constrained, switch to the short trajectory above.
 
-| Jalon | Sem | Décision/Validation à prendre |
-|-------|-----|-------------------------------|
-| J1 — Bootstrap CI verte | 1 | Aucune. Si non atteint en 1 sem, simplifier la matrice CI. |
-| J2 — Premier log produit | 3 | Valider le format de log capturé (cohérence Insight). |
-| J3 — 3 algos × steady-state | 4 | Vérifier que les 3 parsers de log sont alignés. |
-| J4 — 7 régimes implémentés | 6 | **Go/no-go release** : si la qualité des invariants n'est pas au rendez-vous, replanifier. |
-| J5 — Release `0.1.0` | 8 | Annonce publique, mise en visibilité GC-Insight. |
-| J6 — Mode natif | 10 | MVP livré ou décision de packaging V1. |
+## 11. Milestones and decision points
 
-## 12. Dépendances externes critiques
+| Milestone | Wk | Decision / Validation |
+|-----------|----|-----------------------|
+| M1 — Bootstrap CI green | 1 | None. If not reached in 1 wk, simplify the CI matrix. |
+| M2 — First log produced | 3 | Validate the captured log format (Insight consistency). |
+| M3 — Three collectors × steady-state | 4 | Verify that the three log parsers are aligned. |
+| M4 — Seven regimes implemented | 6 | **Go/no-go for release**: if invariant quality is not there, replan. |
+| M5 — `0.1.0` release | 8 | Public announcement, GC-Insight visibility. |
+| M6 — Native runner | 10 | MVP delivered or packaging decision V1. |
 
-- **Disponibilité de `gc-core`** : si `gc-core` est immature côté GC-Insight au démarrage de Phase 1, ajouter 2 semaines pour le stabiliser ou cloner les structures dans GC-Forge temporairement.
-- **Images Docker Eclipse Temurin** : très stable. Pas de risque.
-- **Adoptium API** (V1) : stable depuis 2021, peu risquée.
-- **Pas de dépendance AWS** — conformément au brief §6.
+## 12. Critical external dependencies
 
-## 13. Métriques de succès post-MVP
+- **`gc-core` availability**: if `gc-core` is immature on the
+  GC-Insight side at the start of Phase 1, add 2 weeks to
+  stabilise it or temporarily clone the structures into
+  GC-Forge.
+- **Eclipse Temurin Docker images**: very stable, no risk.
+- **Adoptium API** (V1): stable since 2021, low-risk.
+- **No AWS dependency**, per brief §6.
 
-À mesurer 4 semaines après release `0.1.0` :
-- ≥ 1 contributeur externe (issue ou PR).
-- Corpus de référence GC-Insight régénéré 100 % en CI.
-- ≥ 3 articles de blog ou supports utilisant des logs GC-Forge.
-- Présence dans l'index search (`site:github.com gc-forge`).
-- Bug-rate sur les invariants : 0 régression silencieuse sur les 14 presets.
+## 13. Post-MVP success metrics
+
+To measure 4 weeks after the `0.1.0` release:
+
+- ≥ 1 external contributor (issue or PR).
+- GC-Insight reference corpus regenerated 100 % from CI.
+- ≥ 3 blog articles or training assets using GC-Forge logs.
+- Search-index presence (`site:github.com gc-forge`).
+- Invariant bug rate: zero silent regression on the shipped
+  presets.
