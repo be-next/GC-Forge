@@ -150,7 +150,10 @@ minus filters), runs each cell sequentially through the same orchestrator
 as `gc-forge run`, and writes an `<out-dir>/index.csv` listing every cell's
 log, manifest, exit status, duration, and validation status.
 
-**Matrix YAML schema** (`gc-forge/matrix.v1`):
+**Matrix YAML schema** (`gc-forge/matrix.v1`). The authoritative
+JSON Schema is committed at
+[`schemas/matrix-v1.json`](../../schemas/matrix-v1.json) and is
+generated from the typed Rust model.
 
 ```yaml
 apiVersion: gc-forge/matrix.v1

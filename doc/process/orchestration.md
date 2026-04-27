@@ -68,7 +68,7 @@ After the Coder pushes the final commit, the Reviewer reads the full diff. A red
 
 The loop stops on one of four conditions:
 
-1. **Completion.** Iteration 17 merged, `gc-forge selftest` green on the 14 presets, and the artefacts of release `0.1.0` are ready (the `v0.1.0` tag itself requires human approval, see "Boundaries" below).
+1. **Completion.** Iteration 17 merged, `gc-forge selftest` green on the shipped presets (currently 21), and the artefacts of release `0.1.0` are ready (the `v0.1.0` tag itself requires human approval, see "Boundaries" below).
 2. **Blocking.** The Teamlead raises a flag for an unresolvable architectural ambiguity, an external dependency, or any action requiring a human decision. The loop pauses, the context is recorded in `ITERATION-LOG.md`, and a clear escalation message is emitted.
 3. **Stagnation.** Any of: (a) two consecutive iterations without a merge and coverage stable to within ±0.5 pt; (b) one iteration without a merge while at least one `high` bug is open; (c) the BUGS.md hard cap is hit; (d) an iteration timeout is reached (more than five calendar days, or more than eight loop ticks without a merge).
 4. **Manual interruption.** The user interrupts; the loop finishes the current step at a coherent point and stops.

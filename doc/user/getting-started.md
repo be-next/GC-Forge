@@ -137,7 +137,10 @@ The full list of recognised rule shapes is given in
 ## Running a batch
 
 For exploratory work, a small **matrix** YAML and `gc-forge batch`
-walk the cartesian product of axes and seeds. For example:
+walk the cartesian product of axes and seeds. The matrix document
+follows the `gc-forge/matrix.v1` schema, committed at
+[`schemas/matrix-v1.json`](../../schemas/matrix-v1.json). For
+example:
 
 ```yaml
 apiVersion: gc-forge/matrix.v1
