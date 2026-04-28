@@ -25,9 +25,9 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <main.class>dev.gcforge.harness.WorkloadHarness</main.class>
-        <junit.version>5.11.3</junit.version>
-        <jacoco.version>0.8.12</jacoco.version>
-        <shade.version>3.6.0</shade.version>
+        <junit.version>6.0.3</junit.version>
+        <jacoco.version>0.8.14</jacoco.version>
+        <shade.version>3.6.2</shade.version>
     </properties>
 
     <dependencies>
@@ -45,12 +45,12 @@
         <plugins>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.13.0</version>
+                <version>3.15.0</version>
             </plugin>
 
             <plugin>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <version>3.5.2</version>
+                <version>3.5.5</version>
             </plugin>
 
             <plugin>

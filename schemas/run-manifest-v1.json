@@ -1,39 +1,17 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "RunManifest",
   "description": "Top-level run manifest document.",
   "type": "object",
-  "required": [
-    "apiVersion",
-    "jvm",
-    "kind",
-    "output",
-    "reproducibility",
-    "run",
-    "scenario",
-    "validation"
-  ],
   "properties": {
     "apiVersion": {
       "type": "string"
     },
-    "kind": {
-      "type": "string"
-    },
-    "run": {
-      "$ref": "#/definitions/RunMeta"
-    },
-    "scenario": {
-      "$ref": "#/definitions/ScenarioRecord"
-    },
-    "jvm": {
-      "$ref": "#/definitions/JvmRecord"
-    },
-    "reproducibility": {
-      "$ref": "#/definitions/ReproducibilityRecord"
-    },
-    "output": {
-      "$ref": "#/definitions/OutputRecord"
+    "expected_invariants": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/ExpectedInvariantRecord"
+      }
     },
     "expected_phenomena": {
       "type": "array",
@@ -41,371 +19,43 @@
         "type": "string"
       }
     },
-    "expected_invariants": {
-      "type": "array",
-      "items": {
-        "$ref": "#/definitions/ExpectedInvariantRecord"
-      }
+    "jvm": {
+      "$ref": "#/$defs/JvmRecord"
+    },
+    "kind": {
+      "type": "string"
+    },
+    "output": {
+      "$ref": "#/$defs/OutputRecord"
+    },
+    "reproducibility": {
+      "$ref": "#/$defs/ReproducibilityRecord"
+    },
+    "run": {
+      "$ref": "#/$defs/RunMeta"
+    },
+    "scenario": {
+      "$ref": "#/$defs/ScenarioRecord"
     },
     "validation": {
-      "$ref": "#/definitions/ValidationRecord"
+      "$ref": "#/$defs/ValidationRecord"
     }
   },
   "additionalProperties": false,
-  "definitions": {
-    "RunMeta": {
-      "type": "object",
-      "required": [
-        "duration_actual",
-        "ended_at",
-        "exit_status",
-        "host",
-        "id",
-        "started_at"
-      ],
-      "properties": {
-        "id": {
-          "type": "string"
-        },
-        "started_at": {
-          "type": "string"
-        },
-        "ended_at": {
-          "type": "string"
-        },
-        "duration_actual": {
-          "$ref": "#/definitions/Duration"
-        },
-        "exit_status": {
-          "$ref": "#/definitions/ExitStatusRecord"
-        },
-        "host": {
-          "$ref": "#/definitions/HostMeta"
-        }
-      },
-      "additionalProperties": false
-    },
-    "Duration": {
-      "description": "A wall-clock duration, parsed from human-friendly suffix forms or minimal ISO-8601.",
-      "allOf": [
-        {
-          "$ref": "#/definitions/Duration2"
-        }
-      ]
-    },
-    "Duration2": {
-      "type": "object",
-      "required": [
-        "nanos",
-        "secs"
-      ],
-      "properties": {
-        "secs": {
-          "type": "integer",
-          "format": "uint64",
-          "minimum": 0.0
-        },
-        "nanos": {
-          "type": "integer",
-          "format": "uint32",
-          "minimum": 0.0
-        }
-      }
-    },
-    "ExitStatusRecord": {
-      "oneOf": [
-        {
-          "type": "object",
-          "required": [
-            "kind"
-          ],
-          "properties": {
-            "kind": {
-              "type": "string",
-              "enum": [
-                "success"
-              ]
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "code",
-            "kind"
-          ],
-          "properties": {
-            "kind": {
-              "type": "string",
-              "enum": [
-                "failure"
-              ]
-            },
-            "code": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "kind"
-          ],
-          "properties": {
-            "kind": {
-              "type": "string",
-              "enum": [
-                "oom"
-              ]
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "kind"
-          ],
-          "properties": {
-            "kind": {
-              "type": "string",
-              "enum": [
-                "timeout"
-              ]
-            }
-          }
-        },
-        {
-          "type": "object",
-          "required": [
-            "kind",
-            "signal"
-          ],
-          "properties": {
-            "kind": {
-              "type": "string",
-              "enum": [
-                "signaled"
-              ]
-            },
-            "signal": {
-              "type": "integer",
-              "format": "int32"
-            }
-          }
-        }
-      ]
-    },
-    "HostMeta": {
-      "type": "object",
-      "required": [
-        "arch",
-        "container",
-        "cpu_count",
-        "os"
-      ],
-      "properties": {
-        "os": {
-          "type": "string"
-        },
-        "arch": {
-          "type": "string"
-        },
-        "cpu_count": {
-          "type": "integer",
-          "format": "uint32",
-          "minimum": 0.0
-        },
-        "container": {
-          "description": "`docker:<image-tag>` or `native:<jdk-path>`.",
-          "type": "string"
-        }
-      },
-      "additionalProperties": false
-    },
-    "ScenarioRecord": {
-      "type": "object",
-      "required": [
-        "resolved",
-        "source_path",
-        "source_sha256"
-      ],
-      "properties": {
-        "source_path": {
-          "type": "string"
-        },
-        "source_sha256": {
-          "type": "string"
-        },
-        "resolved": {
-          "$ref": "#/definitions/Scenario"
-        }
-      },
-      "additionalProperties": false
-    },
-    "Scenario": {
-      "description": "Top-level scenario document.",
-      "type": "object",
-      "required": [
-        "apiVersion",
-        "kind",
-        "metadata",
-        "spec"
-      ],
-      "properties": {
-        "apiVersion": {
-          "type": "string"
-        },
-        "kind": {
-          "type": "string"
-        },
-        "extends": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "metadata": {
-          "$ref": "#/definitions/Metadata"
-        },
-        "spec": {
-          "$ref": "#/definitions/Spec"
-        }
-      },
-      "additionalProperties": false
-    },
-    "Metadata": {
-      "type": "object",
-      "required": [
-        "name"
-      ],
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "version": {
-          "default": "1.0.0",
-          "type": "string"
-        },
-        "description": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "tags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "authors": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "Spec": {
-      "type": "object",
-      "required": [
-        "duration",
-        "gc",
-        "jvm",
-        "regime",
-        "seed"
-      ],
-      "properties": {
-        "jvm": {
-          "$ref": "#/definitions/JvmSpec"
-        },
-        "gc": {
-          "$ref": "#/definitions/GcSpec"
-        },
-        "regime": {
-          "$ref": "#/definitions/RegimeSpec"
-        },
-        "duration": {
-          "$ref": "#/definitions/Duration"
-        },
-        "warmup": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Duration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "seed": {
-          "$ref": "#/definitions/Seed"
-        },
-        "output": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/OutputSpec"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "expected": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ExpectedClause"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "JvmSpec": {
-      "type": "object",
-      "required": [
-        "major",
-        "vendor"
-      ],
-      "properties": {
-        "vendor": {
-          "$ref": "#/definitions/JvmVendor"
-        },
-        "major": {
-          "type": "integer",
-          "format": "uint8",
-          "minimum": 0.0
-        },
-        "distribution": {
-          "default": "jdk",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Distribution"
-            }
-          ]
-        },
-        "extra_flags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "JvmVendor": {
-      "type": "string",
-      "enum": [
-        "temurin",
-        "corretto",
-        "graalvm",
-        "openj9"
-      ]
+  "required": [
+    "apiVersion",
+    "kind",
+    "run",
+    "scenario",
+    "jvm",
+    "reproducibility",
+    "output",
+    "validation"
+  ],
+  "$defs": {
+    "ByteSize": {
+      "description": "A size in bytes, parsed from JVM-style strings (`\"2g\"`, `\"512m\"`, `\"1024\"`).",
+      "type": "string"
     },
     "Distribution": {
       "type": "string",
@@ -414,44 +64,117 @@
         "jre"
       ]
     },
-    "GcSpec": {
-      "type": "object",
-      "required": [
-        "algorithm"
-      ],
-      "properties": {
-        "algorithm": {
-          "$ref": "#/definitions/GcAlgorithm"
-        },
-        "options": {
-          "default": {
-            "heap": {
-              "max": "0",
-              "min": "0"
+    "Duration": {
+      "description": "A wall-clock duration, parsed from human-friendly suffix forms or\nminimal ISO-8601.",
+      "type": "string"
+    },
+    "ExitStatusRecord": {
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "success"
             }
           },
-          "allOf": [
-            {
-              "$ref": "#/definitions/GcOptions"
-            }
+          "required": [
+            "kind"
           ]
         },
-        "extra_flags": {
+        {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "kind": {
+              "type": "string",
+              "const": "failure"
+            }
+          },
+          "required": [
+            "kind",
+            "code"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "oom"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "timeout"
+            }
+          },
+          "required": [
+            "kind"
+          ]
+        },
+        {
+          "type": "object",
+          "properties": {
+            "kind": {
+              "type": "string",
+              "const": "signaled"
+            },
+            "signal": {
+              "type": "integer",
+              "format": "int32"
+            }
+          },
+          "required": [
+            "kind",
+            "signal"
+          ]
+        }
+      ]
+    },
+    "ExpectedClause": {
+      "type": "object",
+      "properties": {
+        "invariants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InvariantRule"
+          }
+        },
+        "phenomena": {
           "type": "array",
           "items": {
             "type": "string"
           }
-        },
-        "log_format": {
-          "default": "unified",
-          "allOf": [
-            {
-              "$ref": "#/definitions/LogFormat"
-            }
-          ]
         }
       },
       "additionalProperties": false
+    },
+    "ExpectedInvariantRecord": {
+      "type": "object",
+      "properties": {
+        "rule": {
+          "type": "string"
+        },
+        "threshold": {
+          "description": "Free-form (number/string/array) — schema describes a generic value.",
+          "default": null
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "rule"
+      ]
     },
     "GcAlgorithm": {
       "type": "string",
@@ -466,35 +189,16 @@
     },
     "GcOptions": {
       "type": "object",
-      "required": [
-        "heap"
-      ],
       "properties": {
         "generational": {
-          "description": "Generational mode for ZGC. Defaults to `None` at parse time; the runner applies the algorithm-specific default (`true` for ZGC on JDK 21+).",
+          "description": "Generational mode for ZGC. Defaults to `None` at parse time; the runner\napplies the algorithm-specific default (`true` for ZGC on JDK 21+).",
           "type": [
             "boolean",
             "null"
           ]
         },
         "heap": {
-          "$ref": "#/definitions/HeapConfig"
-        },
-        "pause_target_ms": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint32",
-          "minimum": 0.0
-        },
-        "region_size_mb": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint32",
-          "minimum": 0.0
+          "$ref": "#/$defs/HeapConfig"
         },
         "ihop_percent": {
           "type": [
@@ -502,28 +206,75 @@
             "null"
           ],
           "format": "uint8",
-          "minimum": 0.0
+          "maximum": 255,
+          "minimum": 0
+        },
+        "pause_target_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "region_size_mb": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "heap"
+      ]
+    },
+    "GcSpec": {
+      "type": "object",
+      "properties": {
+        "algorithm": {
+          "$ref": "#/$defs/GcAlgorithm"
+        },
+        "extra_flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "log_format": {
+          "$ref": "#/$defs/LogFormat",
+          "default": "unified"
+        },
+        "options": {
+          "$ref": "#/$defs/GcOptions",
+          "default": {
+            "heap": {
+              "max": "0",
+              "min": "0"
+            }
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "algorithm"
+      ]
     },
     "HeapConfig": {
       "type": "object",
-      "required": [
-        "max",
-        "min"
-      ],
       "properties": {
-        "min": {
-          "$ref": "#/definitions/ByteSize"
-        },
         "max": {
-          "$ref": "#/definitions/ByteSize"
+          "$ref": "#/$defs/ByteSize"
+        },
+        "min": {
+          "$ref": "#/$defs/ByteSize"
         },
         "new_size": {
           "anyOf": [
             {
-              "$ref": "#/definitions/ByteSize"
+              "$ref": "#/$defs/ByteSize"
             },
             {
               "type": "null"
@@ -531,13 +282,118 @@
           ]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "min",
+        "max"
+      ]
     },
-    "ByteSize": {
-      "description": "A size in bytes, parsed from JVM-style strings (`\"2g\"`, `\"512m\"`, `\"1024\"`).",
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
+    "HostMeta": {
+      "type": "object",
+      "properties": {
+        "arch": {
+          "type": "string"
+        },
+        "container": {
+          "description": "`docker:<image-tag>` or `native:<jdk-path>`.",
+          "type": "string"
+        },
+        "cpu_count": {
+          "type": "integer",
+          "format": "uint32",
+          "minimum": 0
+        },
+        "os": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "os",
+        "arch",
+        "cpu_count",
+        "container"
+      ]
+    },
+    "InvariantRule": {
+      "type": "object",
+      "properties": {
+        "rule": {
+          "type": "string"
+        },
+        "threshold": {
+          "description": "Free-form threshold (number/string/array depending on the rule).",
+          "default": null
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "rule"
+      ]
+    },
+    "JvmRecord": {
+      "type": "object",
+      "properties": {
+        "flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "vendor": {
+          "type": "string"
+        },
+        "version": {
+          "description": "Human-readable version string from `java -version`, when available.",
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "vendor",
+        "flags"
+      ]
+    },
+    "JvmSpec": {
+      "type": "object",
+      "properties": {
+        "distribution": {
+          "$ref": "#/$defs/Distribution",
+          "default": "jdk"
+        },
+        "extra_flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "major": {
+          "type": "integer",
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "vendor": {
+          "$ref": "#/$defs/JvmVendor"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "vendor",
+        "major"
+      ]
+    },
+    "JvmVendor": {
+      "type": "string",
+      "enum": [
+        "temurin",
+        "corretto",
+        "graalvm",
+        "openj9"
+      ]
     },
     "LogFormat": {
       "type": "string",
@@ -546,31 +402,71 @@
         "legacy"
       ]
     },
-    "RegimeSpec": {
+    "Metadata": {
       "type": "object",
-      "required": [
-        "kind"
-      ],
       "properties": {
-        "kind": {
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
           "type": "string"
         },
-        "parameters": {
-          "description": "Free-form parameters; schema describes a generic JSON object.",
-          "default": null
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "version": {
+          "type": "string",
+          "default": "1.0.0"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "name"
+      ]
     },
-    "Seed": {
-      "description": "Seed, accepted as either a non-negative integer or a hex string `\"0xC0FFEE\"`.",
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
+    "OutputRecord": {
+      "type": "object",
+      "properties": {
+        "log_path": {
+          "type": "string"
+        },
+        "log_sha256": {
+          "type": "string"
+        },
+        "log_size_bytes": {
+          "type": "integer",
+          "format": "uint64",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "log_path",
+        "log_sha256",
+        "log_size_bytes"
+      ]
     },
     "OutputSpec": {
       "type": "object",
       "properties": {
+        "capture_jfr": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "log_path": {
           "type": [
             "string",
@@ -582,150 +478,203 @@
             "string",
             "null"
           ]
-        },
-        "capture_jfr": {
-          "type": [
-            "boolean",
-            "null"
-          ]
         }
       },
       "additionalProperties": false
     },
-    "ExpectedClause": {
+    "RegimeSpec": {
       "type": "object",
       "properties": {
-        "phenomena": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "invariants": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/InvariantRule"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "InvariantRule": {
-      "type": "object",
-      "required": [
-        "rule"
-      ],
-      "properties": {
-        "rule": {
+        "kind": {
           "type": "string"
         },
-        "threshold": {
-          "description": "Free-form threshold (number/string/array depending on the rule).",
+        "parameters": {
+          "description": "Free-form parameters; schema describes a generic JSON object.",
           "default": null
         }
       },
-      "additionalProperties": false
-    },
-    "JvmRecord": {
-      "type": "object",
+      "additionalProperties": false,
       "required": [
-        "flags",
-        "vendor"
-      ],
-      "properties": {
-        "vendor": {
-          "type": "string"
-        },
-        "version": {
-          "description": "Human-readable version string from `java -version`, when available.",
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "flags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "additionalProperties": false
+        "kind"
+      ]
     },
     "ReproducibilityRecord": {
       "type": "object",
-      "required": [
-        "gc_forge_version",
-        "seed",
-        "workload_jar_sha256"
-      ],
       "properties": {
+        "gc_forge_version": {
+          "type": "string"
+        },
         "seed": {
           "description": "The seed as a hex string, e.g. `\"0xC0FFEE\"`.",
           "type": "string"
         },
         "workload_jar_sha256": {
           "type": "string"
-        },
-        "gc_forge_version": {
-          "type": "string"
         }
       },
-      "additionalProperties": false
-    },
-    "OutputRecord": {
-      "type": "object",
+      "additionalProperties": false,
       "required": [
-        "log_path",
-        "log_sha256",
-        "log_size_bytes"
-      ],
-      "properties": {
-        "log_path": {
-          "type": "string"
-        },
-        "log_sha256": {
-          "type": "string"
-        },
-        "log_size_bytes": {
-          "type": "integer",
-          "format": "uint64",
-          "minimum": 0.0
-        }
-      },
-      "additionalProperties": false
+        "seed",
+        "workload_jar_sha256",
+        "gc_forge_version"
+      ]
     },
-    "ExpectedInvariantRecord": {
+    "RunMeta": {
       "type": "object",
-      "required": [
-        "rule"
-      ],
       "properties": {
-        "rule": {
+        "duration_actual": {
+          "$ref": "#/$defs/Duration"
+        },
+        "ended_at": {
           "type": "string"
         },
-        "threshold": {
-          "description": "Free-form (number/string/array) — schema describes a generic value.",
-          "default": null
+        "exit_status": {
+          "$ref": "#/$defs/ExitStatusRecord"
+        },
+        "host": {
+          "$ref": "#/$defs/HostMeta"
+        },
+        "id": {
+          "type": "string"
+        },
+        "started_at": {
+          "type": "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "started_at",
+        "ended_at",
+        "duration_actual",
+        "exit_status",
+        "host"
+      ]
+    },
+    "Scenario": {
+      "description": "Top-level scenario document.",
+      "type": "object",
+      "properties": {
+        "apiVersion": {
+          "type": "string"
+        },
+        "extends": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "kind": {
+          "type": "string"
+        },
+        "metadata": {
+          "$ref": "#/$defs/Metadata"
+        },
+        "spec": {
+          "$ref": "#/$defs/Spec"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "apiVersion",
+        "kind",
+        "metadata",
+        "spec"
+      ]
+    },
+    "ScenarioRecord": {
+      "type": "object",
+      "properties": {
+        "resolved": {
+          "$ref": "#/$defs/Scenario"
+        },
+        "source_path": {
+          "type": "string"
+        },
+        "source_sha256": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "source_path",
+        "source_sha256",
+        "resolved"
+      ]
+    },
+    "Seed": {
+      "description": "Seed, accepted as either a non-negative integer or a hex string `\"0xC0FFEE\"`.",
+      "type": "string"
+    },
+    "Spec": {
+      "type": "object",
+      "properties": {
+        "duration": {
+          "$ref": "#/$defs/Duration"
+        },
+        "expected": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExpectedClause"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "gc": {
+          "$ref": "#/$defs/GcSpec"
+        },
+        "jvm": {
+          "$ref": "#/$defs/JvmSpec"
+        },
+        "output": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OutputSpec"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "regime": {
+          "$ref": "#/$defs/RegimeSpec"
+        },
+        "seed": {
+          "$ref": "#/$defs/Seed"
+        },
+        "warmup": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Duration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "jvm",
+        "gc",
+        "regime",
+        "duration",
+        "seed"
+      ]
     },
     "ValidationRecord": {
       "type": "object",
-      "required": [
-        "status",
-        "validator_version"
-      ],
       "properties": {
-        "status": {
-          "$ref": "#/definitions/ValidationStatus"
-        },
         "results": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ValidationResult"
+            "$ref": "#/$defs/ValidationResult"
           }
+        },
+        "status": {
+          "$ref": "#/$defs/ValidationStatus"
         },
         "validated_at": {
           "type": [
@@ -737,7 +686,31 @@
           "type": "string"
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "validator_version"
+      ]
+    },
+    "ValidationResult": {
+      "type": "object",
+      "properties": {
+        "observed": true,
+        "passed": {
+          "type": "boolean"
+        },
+        "rule": {
+          "type": "string"
+        },
+        "threshold": true
+      },
+      "additionalProperties": false,
+      "required": [
+        "rule",
+        "observed",
+        "threshold",
+        "passed"
+      ]
     },
     "ValidationStatus": {
       "type": "string",
@@ -746,26 +719,6 @@
         "failed",
         "skipped"
       ]
-    },
-    "ValidationResult": {
-      "type": "object",
-      "required": [
-        "observed",
-        "passed",
-        "rule",
-        "threshold"
-      ],
-      "properties": {
-        "rule": {
-          "type": "string"
-        },
-        "observed": true,
-        "threshold": true,
-        "passed": {
-          "type": "boolean"
-        }
-      },
-      "additionalProperties": false
     }
   }
 }

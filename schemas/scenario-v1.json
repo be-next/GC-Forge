@@ -1,19 +1,10 @@
 {
-  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "Scenario",
   "description": "Top-level scenario document.",
   "type": "object",
-  "required": [
-    "apiVersion",
-    "kind",
-    "metadata",
-    "spec"
-  ],
   "properties": {
     "apiVersion": {
-      "type": "string"
-    },
-    "kind": {
       "type": "string"
     },
     "extends": {
@@ -22,147 +13,27 @@
         "null"
       ]
     },
+    "kind": {
+      "type": "string"
+    },
     "metadata": {
-      "$ref": "#/definitions/Metadata"
+      "$ref": "#/$defs/Metadata"
     },
     "spec": {
-      "$ref": "#/definitions/Spec"
+      "$ref": "#/$defs/Spec"
     }
   },
   "additionalProperties": false,
-  "definitions": {
-    "Metadata": {
-      "type": "object",
-      "required": [
-        "name"
-      ],
-      "properties": {
-        "name": {
-          "type": "string"
-        },
-        "version": {
-          "default": "1.0.0",
-          "type": "string"
-        },
-        "description": {
-          "type": [
-            "string",
-            "null"
-          ]
-        },
-        "tags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "authors": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "Spec": {
-      "type": "object",
-      "required": [
-        "duration",
-        "gc",
-        "jvm",
-        "regime",
-        "seed"
-      ],
-      "properties": {
-        "jvm": {
-          "$ref": "#/definitions/JvmSpec"
-        },
-        "gc": {
-          "$ref": "#/definitions/GcSpec"
-        },
-        "regime": {
-          "$ref": "#/definitions/RegimeSpec"
-        },
-        "duration": {
-          "$ref": "#/definitions/Duration"
-        },
-        "warmup": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/Duration"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "seed": {
-          "$ref": "#/definitions/Seed"
-        },
-        "output": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/OutputSpec"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        },
-        "expected": {
-          "anyOf": [
-            {
-              "$ref": "#/definitions/ExpectedClause"
-            },
-            {
-              "type": "null"
-            }
-          ]
-        }
-      },
-      "additionalProperties": false
-    },
-    "JvmSpec": {
-      "type": "object",
-      "required": [
-        "major",
-        "vendor"
-      ],
-      "properties": {
-        "vendor": {
-          "$ref": "#/definitions/JvmVendor"
-        },
-        "major": {
-          "type": "integer",
-          "format": "uint8",
-          "minimum": 0.0
-        },
-        "distribution": {
-          "default": "jdk",
-          "allOf": [
-            {
-              "$ref": "#/definitions/Distribution"
-            }
-          ]
-        },
-        "extra_flags": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "JvmVendor": {
-      "type": "string",
-      "enum": [
-        "temurin",
-        "corretto",
-        "graalvm",
-        "openj9"
-      ]
+  "required": [
+    "apiVersion",
+    "kind",
+    "metadata",
+    "spec"
+  ],
+  "$defs": {
+    "ByteSize": {
+      "description": "A size in bytes, parsed from JVM-style strings (`\"2g\"`, `\"512m\"`, `\"1024\"`).",
+      "type": "string"
     },
     "Distribution": {
       "type": "string",
@@ -171,41 +42,24 @@
         "jre"
       ]
     },
-    "GcSpec": {
+    "Duration": {
+      "description": "A wall-clock duration, parsed from human-friendly suffix forms or\nminimal ISO-8601.",
+      "type": "string"
+    },
+    "ExpectedClause": {
       "type": "object",
-      "required": [
-        "algorithm"
-      ],
       "properties": {
-        "algorithm": {
-          "$ref": "#/definitions/GcAlgorithm"
+        "invariants": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/InvariantRule"
+          }
         },
-        "options": {
-          "default": {
-            "heap": {
-              "max": "0",
-              "min": "0"
-            }
-          },
-          "allOf": [
-            {
-              "$ref": "#/definitions/GcOptions"
-            }
-          ]
-        },
-        "extra_flags": {
+        "phenomena": {
           "type": "array",
           "items": {
             "type": "string"
           }
-        },
-        "log_format": {
-          "default": "unified",
-          "allOf": [
-            {
-              "$ref": "#/definitions/LogFormat"
-            }
-          ]
         }
       },
       "additionalProperties": false
@@ -223,35 +77,16 @@
     },
     "GcOptions": {
       "type": "object",
-      "required": [
-        "heap"
-      ],
       "properties": {
         "generational": {
-          "description": "Generational mode for ZGC. Defaults to `None` at parse time; the runner applies the algorithm-specific default (`true` for ZGC on JDK 21+).",
+          "description": "Generational mode for ZGC. Defaults to `None` at parse time; the runner\napplies the algorithm-specific default (`true` for ZGC on JDK 21+).",
           "type": [
             "boolean",
             "null"
           ]
         },
         "heap": {
-          "$ref": "#/definitions/HeapConfig"
-        },
-        "pause_target_ms": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint32",
-          "minimum": 0.0
-        },
-        "region_size_mb": {
-          "type": [
-            "integer",
-            "null"
-          ],
-          "format": "uint32",
-          "minimum": 0.0
+          "$ref": "#/$defs/HeapConfig"
         },
         "ihop_percent": {
           "type": [
@@ -259,28 +94,75 @@
             "null"
           ],
           "format": "uint8",
-          "minimum": 0.0
+          "maximum": 255,
+          "minimum": 0
+        },
+        "pause_target_ms": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
+        },
+        "region_size_mb": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "format": "uint32",
+          "minimum": 0
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "heap"
+      ]
+    },
+    "GcSpec": {
+      "type": "object",
+      "properties": {
+        "algorithm": {
+          "$ref": "#/$defs/GcAlgorithm"
+        },
+        "extra_flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "log_format": {
+          "$ref": "#/$defs/LogFormat",
+          "default": "unified"
+        },
+        "options": {
+          "$ref": "#/$defs/GcOptions",
+          "default": {
+            "heap": {
+              "max": "0",
+              "min": "0"
+            }
+          }
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "algorithm"
+      ]
     },
     "HeapConfig": {
       "type": "object",
-      "required": [
-        "max",
-        "min"
-      ],
       "properties": {
-        "min": {
-          "$ref": "#/definitions/ByteSize"
-        },
         "max": {
-          "$ref": "#/definitions/ByteSize"
+          "$ref": "#/$defs/ByteSize"
+        },
+        "min": {
+          "$ref": "#/$defs/ByteSize"
         },
         "new_size": {
           "anyOf": [
             {
-              "$ref": "#/definitions/ByteSize"
+              "$ref": "#/$defs/ByteSize"
             },
             {
               "type": "null"
@@ -288,13 +170,65 @@
           ]
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "min",
+        "max"
+      ]
     },
-    "ByteSize": {
-      "description": "A size in bytes, parsed from JVM-style strings (`\"2g\"`, `\"512m\"`, `\"1024\"`).",
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
+    "InvariantRule": {
+      "type": "object",
+      "properties": {
+        "rule": {
+          "type": "string"
+        },
+        "threshold": {
+          "description": "Free-form threshold (number/string/array depending on the rule).",
+          "default": null
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "rule"
+      ]
+    },
+    "JvmSpec": {
+      "type": "object",
+      "properties": {
+        "distribution": {
+          "$ref": "#/$defs/Distribution",
+          "default": "jdk"
+        },
+        "extra_flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "major": {
+          "type": "integer",
+          "format": "uint8",
+          "maximum": 255,
+          "minimum": 0
+        },
+        "vendor": {
+          "$ref": "#/$defs/JvmVendor"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "vendor",
+        "major"
+      ]
+    },
+    "JvmVendor": {
+      "type": "string",
+      "enum": [
+        "temurin",
+        "corretto",
+        "graalvm",
+        "openj9"
+      ]
     },
     "LogFormat": {
       "type": "string",
@@ -303,58 +237,49 @@
         "legacy"
       ]
     },
-    "RegimeSpec": {
+    "Metadata": {
       "type": "object",
-      "required": [
-        "kind"
-      ],
       "properties": {
-        "kind": {
+        "authors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "description": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "name": {
           "type": "string"
         },
-        "parameters": {
-          "description": "Free-form parameters; schema describes a generic JSON object.",
-          "default": null
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "version": {
+          "type": "string",
+          "default": "1.0.0"
         }
       },
-      "additionalProperties": false
-    },
-    "Duration": {
-      "description": "A wall-clock duration, parsed from human-friendly suffix forms or minimal ISO-8601.",
-      "allOf": [
-        {
-          "$ref": "#/definitions/Duration2"
-        }
-      ]
-    },
-    "Duration2": {
-      "type": "object",
+      "additionalProperties": false,
       "required": [
-        "nanos",
-        "secs"
-      ],
-      "properties": {
-        "secs": {
-          "type": "integer",
-          "format": "uint64",
-          "minimum": 0.0
-        },
-        "nanos": {
-          "type": "integer",
-          "format": "uint32",
-          "minimum": 0.0
-        }
-      }
-    },
-    "Seed": {
-      "description": "Seed, accepted as either a non-negative integer or a hex string `\"0xC0FFEE\"`.",
-      "type": "integer",
-      "format": "uint64",
-      "minimum": 0.0
+        "name"
+      ]
     },
     "OutputSpec": {
       "type": "object",
       "properties": {
+        "capture_jfr": {
+          "type": [
+            "boolean",
+            "null"
+          ]
+        },
         "log_path": {
           "type": [
             "string",
@@ -366,49 +291,87 @@
             "string",
             "null"
           ]
-        },
-        "capture_jfr": {
-          "type": [
-            "boolean",
-            "null"
-          ]
         }
       },
       "additionalProperties": false
     },
-    "ExpectedClause": {
+    "RegimeSpec": {
       "type": "object",
       "properties": {
-        "phenomena": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          }
-        },
-        "invariants": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/InvariantRule"
-          }
-        }
-      },
-      "additionalProperties": false
-    },
-    "InvariantRule": {
-      "type": "object",
-      "required": [
-        "rule"
-      ],
-      "properties": {
-        "rule": {
+        "kind": {
           "type": "string"
         },
-        "threshold": {
-          "description": "Free-form threshold (number/string/array depending on the rule).",
+        "parameters": {
+          "description": "Free-form parameters; schema describes a generic JSON object.",
           "default": null
         }
       },
-      "additionalProperties": false
+      "additionalProperties": false,
+      "required": [
+        "kind"
+      ]
+    },
+    "Seed": {
+      "description": "Seed, accepted as either a non-negative integer or a hex string `\"0xC0FFEE\"`.",
+      "type": "string"
+    },
+    "Spec": {
+      "type": "object",
+      "properties": {
+        "duration": {
+          "$ref": "#/$defs/Duration"
+        },
+        "expected": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/ExpectedClause"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "gc": {
+          "$ref": "#/$defs/GcSpec"
+        },
+        "jvm": {
+          "$ref": "#/$defs/JvmSpec"
+        },
+        "output": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/OutputSpec"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "regime": {
+          "$ref": "#/$defs/RegimeSpec"
+        },
+        "seed": {
+          "$ref": "#/$defs/Seed"
+        },
+        "warmup": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Duration"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "jvm",
+        "gc",
+        "regime",
+        "duration",
+        "seed"
+      ]
     }
   }
 }

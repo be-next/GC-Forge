@@ -5,6 +5,47 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ## [Unreleased]
 
+### Changed (dependency updates)
+
+- **GitHub Actions** bumped: `actions/checkout` v4 → v6,
+  `actions/setup-java` v4 → v5, `actions/upload-artifact` v4 →
+  v7, `softprops/action-gh-release` v2 → v3,
+  `docker/setup-qemu-action` v3 → v4,
+  `docker/setup-buildx-action` v3 → v4, `docker/login-action`
+  v3 → v4, `docker/build-push-action` v6 → v7. Closes
+  Dependabot PR #4.
+- **Maven plugins** bumped: `jacoco-maven-plugin` 0.8.12 →
+  0.8.14, `maven-shade-plugin` 3.6.0 → 3.6.2,
+  `maven-compiler-plugin` 3.13.0 → 3.15.0,
+  `maven-surefire-plugin` 3.5.2 → 3.5.5. Closes Dependabot
+  PR #2.
+- **JUnit Jupiter** 5.11.3 → 6.0.3. Major bump; the harness's
+  61 unit tests pass without source changes (Java 17 already
+  meets the JUnit 6 minimum). Closes Dependabot PR #3.
+- **`sha2`** 0.10 → 0.11 (Cargo). API stable; no source
+  changes. Closes Dependabot PR #7.
+- **`thiserror`** 1.0 → 2.0 (Cargo). Major bump; the project's
+  use of the `#[derive(Error)]` macro is compatible with the
+  2.x API; no source changes. Closes Dependabot PR #6.
+- **`schemars`** 0.8 → 1.2 (Cargo). Major bump; the
+  `preserve_order` feature is no longer needed (default
+  behaviour). The generated JSON Schemas
+  (`schemas/scenario-v1.json`, `schemas/run-manifest-v1.json`,
+  `schemas/matrix-v1.json`) are regenerated and now declare
+  draft 2020-12 (`https://json-schema.org/draft/2020-12/schema`)
+  instead of draft-07. Consumers that pin a specific draft must
+  be updated. Closes Dependabot PR #5.
+
+### Closed without merging
+
+- Dependabot PRs #1, #8, #9 (`eclipse-temurin`
+  17/21/22 → 25-jdk-jammy). The MVP supported JVM matrix is
+  Eclipse Temurin **17 and 21** (cf. SPEC-FUNCTIONAL §3.1).
+  Bumping the runner base image to Temurin 25 would change the
+  scope rather than apply a routine update; that decision will
+  land in a future feature commit alongside the corresponding
+  spec, schema, regime, and documentation updates.
+
 ### Changed (specs translation + resync)
 
 - **Documentation language policy unified to English.** The
