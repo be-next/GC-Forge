@@ -260,7 +260,7 @@ checksum = "d9c4f5dac5e15c24eb999c26181a6ca40b39fe946cbe4c263c7209467bc83af2"
 
 [[package]]
 name = "gc-forge-cli"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "chrono",
@@ -281,7 +281,7 @@ dependencies = [
 
 [[package]]
 name = "gc-forge-presets"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "serde_yaml",
@@ -289,7 +289,7 @@ dependencies = [
 
 [[package]]
 name = "gc-forge-regimes"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "gc-forge-scenario",
  "serde",
@@ -299,7 +299,7 @@ dependencies = [
 
 [[package]]
 name = "gc-forge-runner"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "gc-forge-scenario",
@@ -310,7 +310,7 @@ dependencies = [
 
 [[package]]
 name = "gc-forge-scenario"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "chrono",
  "indexmap",
@@ -326,7 +326,7 @@ dependencies = [
 
 [[package]]
 name = "gc-forge-validate"
-version = "0.1.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "chrono",

@@ -5,6 +5,29 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ## [Unreleased]
 
+### Changed (README + version bump)
+
+- **`README.md`** rewritten as a more accessible landing page:
+    - eight status badges (CI, release pipeline, latest tag,
+      MIT licence, Rust min version, Temurin matrix, multi-arch
+      Docker, doc shortcut);
+    - a *What you get* section showing a real GC-log excerpt
+      and an annotated manifest skeleton, so readers can judge
+      the value before installing;
+    - a *Use cases* table mapping the four target audiences to
+      the value they extract;
+    - an *Examples* section with four representative one-liners
+      (`selftest`, `batch`, `variance-check`, `--override`);
+    - an *Installation* section made explicit (prerequisites,
+      from-source path, JDK-17 alternate);
+    - documentation links presented as tables with a *Purpose*
+      column.
+- **Workspace version bumped from `0.1.0` to `0.2.0`** in
+  `Cargo.toml` and propagated in `Cargo.lock` (the `v0.2.0`
+  remote tag pre-existed but pointed at a workspace still
+  declaring 0.1.0; `gc-forge --version` now reports `0.2.0`,
+  matching the tag).
+
 ### Changed (dependency updates)
 
 - **GitHub Actions** bumped: `actions/checkout` v4 → v6,
