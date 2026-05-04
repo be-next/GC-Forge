@@ -196,7 +196,7 @@ jobs:
       # Both Dockerfiles `COPY workload-harness/target/workload-harness.jar`,
       # so the fat-jar must exist in the build context before buildx runs.
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           distribution: temurin
           java-version: '21'
