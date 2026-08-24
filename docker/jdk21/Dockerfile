@@ -7,7 +7,7 @@
 # The Makefile target `make docker-image` (default JDK_MAJOR=21)
 # wraps this invocation.
 
-FROM eclipse-temurin:21-jdk-jammy
+FROM eclipse-temurin:22-jdk-jammy
 
 LABEL org.opencontainers.image.title="gc-forge-runner"
 LABEL org.opencontainers.image.description="GC-Forge workload harness on Eclipse Temurin 21."
