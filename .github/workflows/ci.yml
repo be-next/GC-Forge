@@ -20,7 +20,7 @@ jobs:
     name: lint (rustfmt, clippy, deny)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Rust toolchain (pinned by rust-toolchain.toml)
         run: rustup show
@@ -43,7 +43,7 @@ jobs:
     name: test (rust)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Install Rust toolchain
         run: rustup show
@@ -61,7 +61,7 @@ jobs:
     name: test (java harness)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - name: Set up JDK 21
         uses: actions/setup-java@v5
