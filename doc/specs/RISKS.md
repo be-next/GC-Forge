@@ -351,6 +351,33 @@
   for the post-release hardening pass; tracked under O-7
   below.
 
+### R-S3 — Unmaintained Rust dependencies
+
+- **P**: 3 **I**: 2 **Severity**: 6
+- **Description**: A direct dependency is declared unmaintained
+  by RustSec. No vulnerability is known, but fixes will stop
+  coming and `cargo deny check advisories` fails in CI.
+- **Mitigation**:
+  - Short term: list the advisory in `deny.toml`
+    (`[advisories].ignore`) with a reason, only for
+    "unmaintained" advisories without a known vulnerability.
+  - Medium term: migrate to a maintained crate in a dedicated
+    change, then remove the ignore entry.
+- **Triggers**: `cargo deny` red on an `unmaintained` advisory.
+- **Owner**: maintainer.
+- **Outcome**: open.
+  - `chrono` (RUSTSEC-2026-0543, 2026-11): ignored. Suggested
+    replacements are `jiff` or `time`. The migration touches
+    the `run-manifest.v1` timestamps (`DateTime<Utc>` with
+    serde and schemars) and the log timestamp parser in
+    `gc-forge-validate`, so the serialized format must stay
+    the same for GC-Insight.
+  - `serde_yaml` (`0.9.34+deprecated`) is also unmaintained
+    upstream. It is not flagged today: the
+    `unsafe-libyaml` advisory (RUSTSEC-2024-0449) that failed
+    CI in 2026-10 no longer shows up in the RustSec database.
+    Keep an eye on it.
+
 ---
 
 ## 6. Open points to settle after the specifications
@@ -448,7 +475,7 @@ during development:
    a  3 │     │ R-T8│ R-P2│ R-T1│     │      severity 4-7   = moderate
    b    │     │ R-T3│ R-T6│ R-P1│     │      severity 1-3   = low
    i    │     │ R-X1│     │     │     │
-   l    │     │     │     │     │     │
+   l    │     │ R-S3│     │     │     │
    i  2 │     │ R-T9│ R-T2│     │     │
    t    │     │ R-X3│     │     │     │
    y    ├─────┼─────┼─────┼─────┼─────┤

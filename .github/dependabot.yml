@@ -95,6 +95,12 @@ updates:
       - jdk21
     commit-message:
       prefix: "deps(docker-jdk21)"
+    # The image tag encodes the JDK major (`21-jdk-jammy`). A "major" bump
+    # would swap the JDK under test, not refresh the base image: the JDK
+    # set is a locked decision (Temurin 17 and 21, cf. CLAUDE.md §4).
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        update-types: ["version-update:semver-major"]
 
   # ── Runner Docker image — Temurin 17 ────────────────────────────────
   - package-ecosystem: docker
@@ -111,3 +117,7 @@ updates:
       - jdk17
     commit-message:
       prefix: "deps(docker-jdk17)"
+    # Same rule as jdk21: never let Dependabot change the JDK major.
+    ignore:
+      - dependency-name: "eclipse-temurin"
+        update-types: ["version-update:semver-major"]
