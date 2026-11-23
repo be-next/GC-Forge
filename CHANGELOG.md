@@ -5,6 +5,25 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/) and the 
 
 ## [Unreleased]
 
+### Changed (date-time library)
+
+- **`chrono` replaced by `jiff` 1.0** across the workspace
+  (`gc-forge-scenario`, `gc-forge-cli`, `gc-forge-validate`).
+  RustSec flagged `chrono` as unmaintained (RUSTSEC-2026-0543).
+  The `deny.toml` ignore added to unblock CI is removed. Run
+  manifest timestamps are still RFC 3339 UTC strings, and
+  manifests written by earlier releases still load. jiff drops
+  trailing zeros in fractional seconds (`.84212Z` instead of
+  `.842120Z`); the JSON Schemas are unchanged. See RISKS.md R-S3.
+- **New helper** `gc_forge_scenario::timestamp_from_system_time`
+  replaces three private copies of the `SystemTime` conversion
+  in `run`, `batch` and `qualify`.
+
+### Fixed
+
+- GC log timestamps with a negative compact offset (`-0500`) are
+  now parsed. They used to fall back to `timestamp_ms = 0`.
+
 ### Changed (README + version bump)
 
 - **`README.md`** rewritten as a more accessible landing page:

@@ -3,9 +3,7 @@
 use std::fs::OpenOptions;
 use std::io::Write;
 use std::path::{Path, PathBuf};
-use std::time::SystemTime;
 
-use chrono::{DateTime, Utc};
 use clap::Args;
 use thiserror::Error;
 use uuid::Uuid;
@@ -15,9 +13,9 @@ use gc_forge_runner::{
     flags::build_jvm_command, DockerRunner, ExitStatus, RunOutcome, RunSpec, Runner, RunnerError,
 };
 use gc_forge_scenario::{
-    sha256_hex, sha256_hex_bytes, ExitStatusRecord, ExpectedInvariantRecord, HostMeta, JvmRecord,
-    JvmVendor, Matrix, OutputRecord, Override, ReproducibilityRecord, RunManifest, RunMeta,
-    Scenario, ScenarioError, ScenarioRecord,
+    sha256_hex, sha256_hex_bytes, timestamp_from_system_time, ExitStatusRecord,
+    ExpectedInvariantRecord, HostMeta, JvmRecord, JvmVendor, Matrix, OutputRecord, Override,
+    ReproducibilityRecord, RunManifest, RunMeta, Scenario, ScenarioError, ScenarioRecord,
 };
 
 #[derive(Debug, Args)]
@@ -267,8 +265,8 @@ fn build_manifest(
         sha256_hex_bytes(b"")
     };
 
-    let started_at: DateTime<Utc> = system_time_to_utc(outcome.started_at);
-    let ended_at: DateTime<Utc> = system_time_to_utc(outcome.ended_at);
+    let started_at = timestamp_from_system_time(outcome.started_at);
+    let ended_at = timestamp_from_system_time(outcome.ended_at);
     let duration_actual = match outcome.ended_at.duration_since(outcome.started_at) {
         Ok(d) => gc_forge_scenario::Duration::from_secs(d.as_secs()),
         Err(_) => gc_forge_scenario::Duration::from_secs(0),
@@ -364,10 +362,6 @@ fn build_manifest(
     ))
 }
 
-fn system_time_to_utc(t: SystemTime) -> DateTime<Utc> {
-    DateTime::<Utc>::from(t)
-}
-
 fn csv_row(
     scenario: &Scenario,
     seed: Option<u64>,
@@ -419,11 +413,11 @@ mod tests {
 
     #[test]
     fn csv_row_uses_scenario_name_and_seed() {
-        use chrono::Utc;
         use gc_forge_scenario::{
             Duration, HostMeta, JvmRecord, OutputRecord, ReproducibilityRecord, RunManifest,
             RunMeta, ScenarioRecord, ValidationStatus,
         };
+        use jiff::Timestamp;
         let s = Scenario::from_yaml(
             r"apiVersion: gc-forge/scenario.v1
 kind: Scenario
@@ -445,8 +439,8 @@ spec:
         let manifest = RunManifest::new(
             RunMeta {
                 id: "uuid".to_owned(),
-                started_at: Utc::now(),
-                ended_at: Utc::now(),
+                started_at: Timestamp::now(),
+                ended_at: Timestamp::now(),
                 duration_actual: Duration::from_secs(7),
                 exit_status: ExitStatusRecord::Success,
                 host: HostMeta {

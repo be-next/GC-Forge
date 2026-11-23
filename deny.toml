@@ -12,9 +12,7 @@ yanked = "warn"
 # Every entry must carry a reason and a matching follow-up in
 # doc/specs/RISKS.md (R-S3). Only "unmaintained" advisories without a
 # known vulnerability are eligible; security advisories are never ignored.
-ignore = [
-    { id = "RUSTSEC-2026-0543", reason = "chrono unmaintained, no known vulnerability; migration to jiff/time tracked in RISKS.md R-S3 (touches run-manifest timestamps)" },
-]
+ignore = []
 
 [licenses]
 version = 2

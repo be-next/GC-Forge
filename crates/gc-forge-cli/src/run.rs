@@ -1,9 +1,7 @@
 //! `gc-forge run` — orchestrates the scenario+regime+runner+manifest pipeline.
 
 use std::path::{Path, PathBuf};
-use std::time::SystemTime;
 
-use chrono::{DateTime, Utc};
 use clap::Args;
 use thiserror::Error;
 use uuid::Uuid;
@@ -13,9 +11,9 @@ use gc_forge_runner::{
     flags::build_jvm_command, DockerRunner, ExitStatus, RunOutcome, RunSpec, Runner, RunnerError,
 };
 use gc_forge_scenario::{
-    sha256_hex, sha256_hex_bytes, ByteSize, ExitStatusRecord, ExpectedInvariantRecord, HostMeta,
-    JvmRecord, JvmVendor, OutputRecord, Override, ReproducibilityRecord, RunManifest, RunMeta,
-    Scenario, ScenarioError, ScenarioRecord,
+    sha256_hex, sha256_hex_bytes, timestamp_from_system_time, ByteSize, ExitStatusRecord,
+    ExpectedInvariantRecord, HostMeta, JvmRecord, JvmVendor, OutputRecord, Override,
+    ReproducibilityRecord, RunManifest, RunMeta, Scenario, ScenarioError, ScenarioRecord,
 };
 
 /// `gc-forge run` arguments.
@@ -242,8 +240,8 @@ fn build_manifest(
         sha256_hex_bytes(b"")
     };
 
-    let started_at: DateTime<Utc> = system_time_to_utc(outcome.started_at);
-    let ended_at: DateTime<Utc> = system_time_to_utc(outcome.ended_at);
+    let started_at = timestamp_from_system_time(outcome.started_at);
+    let ended_at = timestamp_from_system_time(outcome.ended_at);
     let duration_actual = match outcome.ended_at.duration_since(outcome.started_at) {
         Ok(d) => gc_forge_scenario::Duration::from_secs(d.as_secs()),
         Err(_) => gc_forge_scenario::Duration::from_secs(0),
@@ -334,10 +332,6 @@ fn build_manifest(
     );
     let _ = spec; // currently only the scenario subtree is recorded
     Ok(manifest)
-}
-
-fn system_time_to_utc(t: SystemTime) -> DateTime<Utc> {
-    DateTime::<Utc>::from(t)
 }
 
 fn log_path_in_container(host_log: &Path) -> PathBuf {

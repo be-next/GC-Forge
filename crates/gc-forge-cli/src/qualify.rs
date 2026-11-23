@@ -286,7 +286,7 @@ fn build_minimal_manifest(
     invariant_rules: Vec<&'static str>,
     outcome: &gc_forge_runner::RunOutcome,
 ) -> Result<RunManifest, ScenarioError> {
-    use chrono::{DateTime, Utc};
+    use gc_forge_scenario::timestamp_from_system_time;
     use uuid::Uuid;
 
     let log_size = std::fs::metadata(&outcome.log_path)
@@ -303,8 +303,8 @@ fn build_minimal_manifest(
         sha256_hex_bytes(b"")
     };
 
-    let started_at: DateTime<Utc> = DateTime::<Utc>::from(outcome.started_at);
-    let ended_at: DateTime<Utc> = DateTime::<Utc>::from(outcome.ended_at);
+    let started_at = timestamp_from_system_time(outcome.started_at);
+    let ended_at = timestamp_from_system_time(outcome.ended_at);
     let duration_actual = match outcome.ended_at.duration_since(outcome.started_at) {
         Ok(d) => gc_forge_scenario::Duration::from_secs(d.as_secs()),
         Err(_) => gc_forge_scenario::Duration::from_secs(0),

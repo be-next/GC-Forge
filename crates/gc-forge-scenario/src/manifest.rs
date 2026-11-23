@@ -5,8 +5,9 @@
 use std::fs;
 use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::time::SystemTime;
 
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 use schemars::JsonSchema;
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
@@ -47,9 +48,9 @@ pub struct RunManifest {
 pub struct RunMeta {
     pub id: String,
     #[schemars(with = "String")]
-    pub started_at: DateTime<Utc>,
+    pub started_at: Timestamp,
     #[schemars(with = "String")]
-    pub ended_at: DateTime<Utc>,
+    pub ended_at: Timestamp,
     pub duration_actual: crate::Duration,
     pub exit_status: ExitStatusRecord,
     pub host: HostMeta,
@@ -130,7 +131,7 @@ pub struct ValidationRecord {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[schemars(with = "Option<String>")]
-    pub validated_at: Option<DateTime<Utc>>,
+    pub validated_at: Option<Timestamp>,
 
     pub validator_version: String,
 }
@@ -243,6 +244,16 @@ fn write_atomic(path: &Path, bytes: &[u8]) -> Result<()> {
     Ok(())
 }
 
+/// Converts a wall-clock [`SystemTime`] into the manifest timestamp type.
+///
+/// # Panics
+/// Panics if `t` falls outside jiff's supported range (years -9999 to
+/// 9999). The previous chrono-based conversion panicked in the same case.
+#[must_use]
+pub fn timestamp_from_system_time(t: SystemTime) -> Timestamp {
+    Timestamp::try_from(t).expect("system time outside the supported timestamp range")
+}
+
 /// Computes the SHA-256 of a file as a hex string.
 ///
 /// # Errors
@@ -283,7 +294,6 @@ pub fn render_manifest_schema() -> Result<String> {
 mod tests {
     use super::*;
     use crate::scenario::API_VERSION;
-    use chrono::TimeZone;
 
     fn fixture_scenario() -> Scenario {
         Scenario::from_yaml(
@@ -309,8 +319,8 @@ spec:
 
     fn fixture_manifest() -> RunManifest {
         let s = fixture_scenario();
-        let started = Utc.with_ymd_and_hms(2026, 4, 25, 12, 0, 0).unwrap();
-        let ended = Utc.with_ymd_and_hms(2026, 4, 25, 12, 0, 30).unwrap();
+        let started: Timestamp = "2026-04-25T12:00:00Z".parse().unwrap();
+        let ended: Timestamp = "2026-04-25T12:00:30Z".parse().unwrap();
         RunManifest::new(
             RunMeta {
                 id: "0190d2a0-0000-7000-8000-000000000000".to_owned(),
@@ -365,6 +375,48 @@ spec:
         let json = serde_json::to_string_pretty(&m).unwrap();
         let back: RunManifest = serde_json::from_str(&json).unwrap();
         assert_eq!(m, back);
+    }
+
+    #[test]
+    fn timestamps_serialise_as_rfc3339_utc() {
+        let m = fixture_manifest();
+        let yaml = serde_yaml::to_string(&m).unwrap();
+        assert!(
+            yaml.contains("started_at: 2026-04-25T12:00:00Z"),
+            "yaml = {yaml}"
+        );
+        assert!(
+            yaml.contains("ended_at: 2026-04-25T12:00:30Z"),
+            "yaml = {yaml}"
+        );
+    }
+
+    #[test]
+    fn reads_timestamps_written_by_chrono() {
+        // Shapes emitted by the chrono-based releases (<= 0.2.1): whole
+        // seconds, 3/6/9 fractional digits, `Z` suffix. Explicit offsets
+        // must also be accepted and normalised to UTC.
+        let cases = [
+            ("2026-04-27T06:59:21Z", 1_777_273_161_000_000_000_i128),
+            ("2026-04-27T06:59:21.842Z", 1_777_273_161_842_000_000),
+            ("2026-04-27T06:59:21.842123Z", 1_777_273_161_842_123_000),
+            ("2026-04-27T06:59:21.842123456Z", 1_777_273_161_842_123_456),
+            ("2026-04-27T08:59:21.842+02:00", 1_777_273_161_842_000_000),
+        ];
+        for (text, nanos) in cases {
+            let yaml = format!("validated_at: \"{text}\"\nstatus: passed\nvalidator_version: x\n");
+            let rec: ValidationRecord = serde_yaml::from_str(&yaml)
+                .unwrap_or_else(|e| panic!("{text} failed to parse: {e}"));
+            let ts = rec.validated_at.expect("validated_at present");
+            assert_eq!(ts.as_nanosecond(), nanos, "{text}");
+        }
+    }
+
+    #[test]
+    fn timestamp_from_system_time_keeps_nanoseconds() {
+        let t = std::time::UNIX_EPOCH + std::time::Duration::new(1_777_273_161, 842_123_456);
+        let ts = timestamp_from_system_time(t);
+        assert_eq!(ts.to_string(), "2026-04-27T06:59:21.842123456Z");
     }
 
     #[test]

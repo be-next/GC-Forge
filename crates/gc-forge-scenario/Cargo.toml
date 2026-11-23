@@ -24,7 +24,7 @@ thiserror  = { workspace = true }
 sha2       = { workspace = true }
 uuid       = { workspace = true }
 indexmap   = { version = "2", features = ["serde"] }
-chrono     = { version = "0.4", default-features = false, features = ["serde", "std", "clock"] }
+jiff       = { workspace = true }
 
 [dev-dependencies]
 tempfile = "3.13"

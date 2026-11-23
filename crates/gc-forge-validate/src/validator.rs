@@ -1,7 +1,7 @@
 //! High-level validator that turns a manifest's `expected_invariants` into a
 //! populated `ValidationRecord`.
 
-use chrono::Utc;
+use jiff::Timestamp;
 use serde_yaml::Value;
 
 use gc_forge_scenario::{
@@ -71,7 +71,7 @@ pub fn validate_invariants(
     ValidationRecord {
         status,
         results,
-        validated_at: Some(Utc::now()),
+        validated_at: Some(Timestamp::now()),
         validator_version,
     }
 }
