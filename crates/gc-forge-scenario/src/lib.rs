@@ -30,10 +30,10 @@ pub use byte_size::{ByteSize, ParseByteSizeError};
 pub use duration::{Duration, ParseDurationError};
 pub use error::{Result, ScenarioError};
 pub use manifest::{
-    render_manifest_schema, sha256_hex, sha256_hex_bytes, ExitStatusRecord,
-    ExpectedInvariantRecord, HostMeta, JvmRecord, OutputRecord, ReproducibilityRecord, RunManifest,
-    RunMeta, ScenarioRecord, ValidationRecord, ValidationResult, ValidationStatus,
-    MANIFEST_API_VERSION, MANIFEST_KIND,
+    render_manifest_schema, sha256_hex, sha256_hex_bytes, timestamp_from_system_time,
+    ExitStatusRecord, ExpectedInvariantRecord, HostMeta, JvmRecord, OutputRecord,
+    ReproducibilityRecord, RunManifest, RunMeta, ScenarioRecord, ValidationRecord,
+    ValidationResult, ValidationStatus, MANIFEST_API_VERSION, MANIFEST_KIND,
 };
 pub use matrix::{
     render_matrix_schema, Matrix, MatrixCell, MatrixSpec, MATRIX_API_VERSION, MATRIX_KIND,

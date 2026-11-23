@@ -280,6 +280,9 @@ fn parse_leading_size(s: &str) -> Option<u64> {
 
 /// Parses an ISO-8601 timestamp from the leading `[2026-04-25T13:13:47.389+0000]`
 /// decorator. Returns 0 on failure.
+///
+/// The JVM writes the offset in compact form (`+0000`, `-0500`); jiff accepts
+/// it as well as the extended form (`+00:00`) and `Z`.
 fn extract_timestamp_ms(line: &str) -> i64 {
     let Some(start) = line.find('[') else {
         return 0;
@@ -288,19 +291,9 @@ fn extract_timestamp_ms(line: &str) -> i64 {
         return 0;
     };
     let candidate = &line[start + 1..start + 1 + end];
-    if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(candidate) {
-        return dt.timestamp_millis();
-    }
-    // Temurin 21 uses `+0000` instead of `+00:00`; rewrite and retry.
-    if let Some((date_part, tz_part)) = candidate.rsplit_once('+') {
-        if tz_part.len() == 4 {
-            let normalised = format!("{}+{}:{}", date_part, &tz_part[..2], &tz_part[2..]);
-            if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&normalised) {
-                return dt.timestamp_millis();
-            }
-        }
-    }
-    0
+    candidate
+        .parse::<jiff::Timestamp>()
+        .map_or(0, jiff::Timestamp::as_millisecond)
 }
 
 #[cfg(test)]
@@ -396,11 +389,31 @@ mod tests {
     fn extracts_iso_timestamp_with_compact_offset() {
         let line = "[2026-04-25T13:13:47.389+0000][info][gc] GC(0) Pause Young 1M->1M(2M) 2.0ms";
         let log = parse_log_text(line);
-        assert!(
-            log.events[0].timestamp_ms > 0,
-            "got {}",
-            log.events[0].timestamp_ms
-        );
+        assert_eq!(log.events[0].timestamp_ms, 1_777_122_827_389);
+    }
+
+    #[test]
+    fn timestamp_offsets_resolve_to_the_same_instant() {
+        // 2026-04-25T13:13:47.389Z written with each offset form the JVM
+        // or a post-processed log can carry.
+        for decorator in [
+            "2026-04-25T13:13:47.389+0000",
+            "2026-04-25T13:13:47.389+00:00",
+            "2026-04-25T13:13:47.389Z",
+            "2026-04-25T15:13:47.389+0200",
+            "2026-04-25T08:13:47.389-0500",
+        ] {
+            let line = format!("[{decorator}][info][gc] GC(0) Pause Young 1M->1M(2M) 2.0ms");
+            let log = parse_log_text(&line);
+            assert_eq!(log.events[0].timestamp_ms, 1_777_122_827_389, "{decorator}");
+        }
+    }
+
+    #[test]
+    fn timestamp_defaults_to_zero_without_time_decorator() {
+        let line = "[info][gc] GC(0) Pause Young 1M->1M(2M) 2.0ms";
+        let log = parse_log_text(line);
+        assert_eq!(log.events[0].timestamp_ms, 0);
     }
 
     #[test]

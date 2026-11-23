@@ -365,13 +365,18 @@
     change, then remove the ignore entry.
 - **Triggers**: `cargo deny` red on an `unmaintained` advisory.
 - **Owner**: maintainer.
-- **Outcome**: open.
-  - `chrono` (RUSTSEC-2026-0543, 2026-11): ignored. Suggested
-    replacements are `jiff` or `time`. The migration touches
-    the `run-manifest.v1` timestamps (`DateTime<Utc>` with
-    serde and schemars) and the log timestamp parser in
-    `gc-forge-validate`, so the serialized format must stay
-    the same for GC-Insight.
+- **Outcome**: open (watch list), no ignore entry active.
+  - `chrono` (RUSTSEC-2026-0543, 2026-11): briefly ignored,
+    then replaced by `jiff` 1.0 (`std` + `serde` features
+    only, no time-zone database). Run manifests stay
+    RFC 3339 UTC strings with a `Z` suffix, and manifests
+    written by earlier releases still parse. One cosmetic
+    difference: jiff drops trailing zeros in the fractional
+    seconds (`.84212Z`, where chrono wrote `.842120Z`). Both
+    are valid ISO 8601, and GC-Insight reads only the GC
+    logs, not the manifest timestamps. The log parser now
+    also accepts negative compact offsets (`-0500`), which
+    previously fell back to `timestamp_ms = 0`.
   - `serde_yaml` (`0.9.34+deprecated`) is also unmaintained
     upstream. It is not flagged today: the
     `unsafe-libyaml` advisory (RUSTSEC-2024-0449) that failed
